@@ -11,7 +11,7 @@ usefull that is need in my day to day life. Currenty i keept track of Invoices w
   - Database Interaction
   - Create Invoice
   - Print / Store Invoice
- 
+
 ## The initial Steps are :
 
 ### Create a Python Script with basic functionality
@@ -26,4 +26,3 @@ usefull that is need in my day to day life. Currenty i keept track of Invoices w
 ### Create a GUI for Interaction
 - [ ] Create a GUI
 - [ ] Create a Webinterface
-
