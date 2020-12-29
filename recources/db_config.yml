@@ -1,5 +1,0 @@
-database:
-  address: "XXX.XXX.XXX.XXX"
-  database : "dbName"
-  user: "user"
-  password : "password"
