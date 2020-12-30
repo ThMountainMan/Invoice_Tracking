@@ -68,7 +68,7 @@ def DB_CreateTables(config):
                 print(f"Create new Tables in {config.get('database')}:")
 
                 create_customer_table_query = """
-                CREATE TABLE customer (
+                CREATE TABLE customers (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(100),
                     contact VARCHAR(100),
@@ -79,50 +79,56 @@ def DB_CreateTables(config):
                 )
                 """
 
-                print(" - Create CUSTOMER table ...")
+                print(" - Create CUSTOMERS table ...")
                 cursor.execute(create_customer_table_query)
 
+                # ===================================================
+
                 create_agency_table_query = """
-                CREATE TABLE agency (
+                CREATE TABLE agencys (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(100),
-                    percentage DECIMAL(2,1)
+                    percentage DECIMAL(3,1)
                 )
                 """
 
-                print(" - Create AGENCY table ...")
+                print(" - Create AGENCYS table ...")
                 cursor.execute(create_agency_table_query)
 
+                # ===================================================
+
                 create_jobtype_table_query = """
-                CREATE TABLE jobtype (
+                CREATE TABLE jobtypes (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     name VARCHAR(100)
                 )
                 """
 
-                print(" - Create JOBTYPE table ...")
+                print(" - Create JOBTYPES table ...")
                 cursor.execute(create_jobtype_table_query)
 
+                # ===================================================
+
                 create_invoice_table_query = """
-                CREATE TABLE invoice (
+                CREATE TABLE invoices (
                     id INT AUTO_INCREMENT PRIMARY KEY,
                     date DATE,
-                    description VARCHAR(100),
-                    invoice_ammount DECIMAL(4,2),
+                    description LONGTEXT,
+                    invoice_ammount DECIMAL(8,2),
                     invoice_mwst INT,
                     paydate DATE,
 
                     customer_id INT,
                     jobcode_id INT,
-
                     agency_id INT,
-                    FOREIGN KEY(customer_id) REFERENCES customer(id),
-                    FOREIGN KEY(jobcode_id) REFERENCES jobtype(id),
-                    FOREIGN KEY(agency_id) REFERENCES agency(id)
+
+                    FOREIGN KEY(customer_id) REFERENCES customers(id),
+                    FOREIGN KEY(jobcode_id) REFERENCES jobtypes(id),
+                    FOREIGN KEY(agency_id) REFERENCES agencys(id)
                 )
                 """
 
-                print(" - Create INVOICE table ...")
+                print(" - Create INVOICES table ...")
                 cursor.execute(create_invoice_table_query)
 
         Proceed = True
