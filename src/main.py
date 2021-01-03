@@ -5,14 +5,16 @@
 import sys
 from datetime import datetime
 
-from HelperClasses import Costumer, Agency, Invoce
+from HelperClasses import Costumer, Agency, Invoce, Jobtype
 from check_db import DB_Validation, DB_CreateDB, DB_CreateTables
 import database as DB
+from website import start
 
 
-def main():
+def CreateDBEntry():
     # Validate the DB Connection
-    db_config = DB._ParseConfig()
+    config = DB._ParseConfig()
+    db_config = config['database']
 
     if not DB_Validation(db_config):
         print("No Valid DB found ... Creating the necessarry recources ...")
@@ -26,13 +28,16 @@ def main():
     #Test = DB.get_customer(5)[0]
     #for i in Test:
     #    print(f"{i} - {Test[i]}")
-    DB.create_customer(dCustumer)
-    DB.create_agency(dAgency)
-    DB.create_jobtype(dJobtype)
-    DB.create_invoice(dInvoice)
+    #DB.create_customer(dCustumer)
+    #DB.create_agency(dAgency)
+    #DB.create_jobtype(dJobtype)
+    #DB.create_invoice(dInvoice)
 
 
 if __name__ == '__main__':
+
+    # Parse the config file
+    config = DB._ParseConfig()
 
     dCustumer = {'name': "BaumSchule Winterberg E.V",
                  'contact': "Marianna Winter",
@@ -46,7 +51,8 @@ if __name__ == '__main__':
     dAgency = {'name': "Agency ONE",
                'percentage': 16.0}
 
-    dInvoice = {'date': datetime.now(),
+    dInvoice = {'invoice_id': "2021-001",
+                'date': datetime.now(),
                 'description': "This was a super Job",
                 'invoice_ammount': "2755.86",
                 'invoice_mwst': "16",
@@ -55,4 +61,7 @@ if __name__ == '__main__':
                 'jobcode_id': 1,
                 'agency_id': 1}
 
-    main()
+    #start(config)
+    print("Hallo")
+    print(DB.get_invoice())
+    #main()

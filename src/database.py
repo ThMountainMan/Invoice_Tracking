@@ -7,7 +7,7 @@ from mysql.connector import connect, Error
 def _ParseConfig():
     with open("../recources/db_config.yml", "r") as ymlfile:
         cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)
-    return cfg["database"]
+    return cfg
 
 
 class Database:
@@ -102,9 +102,9 @@ class Database:
         """ Create a new invoice in the database """
         sql = f"""
         INSERT INTO
-            invoices (date, description, invoice_ammount, invoice_mwst, paydate, customer_id, jobcode_id, agency_id)
+            invoices (invoice_id, date, description, invoice_ammount, invoice_mwst, paydate, customer_id, jobcode_id, agency_id)
         VALUES
-            ('{arg['date']}', '{arg['description']}', {arg['invoice_ammount']}, {arg['invoice_mwst']}, '{arg['paydate']}', {arg['customer_id']}, {arg['jobcode_id']}, {arg['agency_id']})
+            ('{arg['invoice_id']}', '{arg['date']}', '{arg['description']}', {arg['invoice_ammount']}, {arg['invoice_mwst']}, '{arg['paydate']}', {arg['customer_id']}, {arg['jobcode_id']}, {arg['agency_id']})
         """
         self.execute(sql, params=None)
         return self.cursor.lastrowid
@@ -152,6 +152,7 @@ class Database:
         UPDATE
             invoices
         SET
+            invoice_id = {arg['invoice_id']}
             date = {arg['date']}
             description = '{arg['description']}'
             invoice_ammount = {arg['invoice_ammount']}

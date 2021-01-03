@@ -1,4 +1,5 @@
 # Define how to handle new / existing customers
+import database as DB
 
 
 class Costumer(object):
@@ -20,23 +21,24 @@ class Costumer(object):
         """ Check if a Customer is already existant """
         pass
 
-    def GetExistingCustomer(self):
+    def GetExistingCustomer(self, id=None):
         """ Get the Existing Customer """
-        # TODO: Needs to be implemented based on DB / CVS implementation
-        pass
+        result = DB.get_customer(filter=id)
+        if id:
+            self.id = id
+            self.name = result['name']
+            self.contact = result['contact']
+            self.street = result['street']
+            self.postcode = result['postcode']
+            self.city = result['city']
+            self.country = result['country']
+        else:
+            pass
 
     def CreateNewCustomer(self):
         """ Create a new Customer """
         # TODO: Needs to be implemented based on DB / CVS implementation
         pass
-
-    def print_out(self):
-        print(f"ID: {self.id}")
-        print(f"Name: {self.name}")
-        print(f"Contact: {self.contact}")
-        print(f"Street: {self.street}")
-        print(f"Postcode: {self.postcode}")
-        print(f"City: {self.city}")
 
 
 class Agency(object):
@@ -55,10 +57,13 @@ class Agency(object):
         """ Check if a Agency is already existant """
         pass
 
-    def GetExistingAgency(self):
+    def GetExistingAgency(self, id=None):
         """ Get the Existing Agency """
-        # TODO: Needs to be implemented based on DB / CVS implementation
-        pass
+        result = DB.get_agency(filter=None)
+
+        self.id = id
+        self.name = result['name']
+        self.percentage = result['percentage']
 
     def CreateNewAgency(self):
         """ Create a new Agency """
@@ -83,8 +88,41 @@ class Invoce(object):
     def add_invoice(self):
         pass
 
-    def get_invoice(self):
-        pass
+    def get_invoice(self, id=None):
+        result = DB.get_invoice(filter=id)
+        self.id = id
+        self.date = result['date']
+        self.customer = result['customer']
+        self.description = result['description']
+        self.job_type = result['job_type']
+        self.agency = result['agency']
+        self.invoice_ammount = result['invoice_ammount']
+        self.invoice_mwst = result['invoice_mwst']
+        self.paydate = result['paydate']
 
     def edit_invoice(self):
+        pass
+
+
+class Jobtype(object):
+    """Class Holds Information about the Jobtype beeing issued / revised"""
+
+    def __init__(self):
+        self.id = None
+        self.name = None
+
+    def CheckJobtype(self):
+        """ Check if a Jobtype is already existant """
+        pass
+
+    def GetExistingJobtype(self, id=None):
+        """ Get the Existing Agency """
+        result = DB.get_jobtype(filter=id)
+
+        self.id = id
+        self.name = result['name']
+
+    def CreateNewJobtype(self):
+        """ Create a new Jobtype """
+        # TODO: Needs to be implemented based on DB / CVS implementation
         pass

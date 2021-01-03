@@ -112,6 +112,7 @@ def DB_CreateTables(config):
                 create_invoice_table_query = """
                 CREATE TABLE invoices (
                     id INT AUTO_INCREMENT PRIMARY KEY,
+                    invoice_id VARCHAR(8)
                     date DATE,
                     description LONGTEXT,
                     invoice_ammount DECIMAL(8,2),
