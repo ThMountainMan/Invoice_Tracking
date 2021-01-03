@@ -6,6 +6,7 @@ from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String, Date, VARCHAR, DECIMAL
 from sqlalchemy import ForeignKey
+from sqlalchemy.ext.declarative import declared_attr
 
 
 def _ParseConfig():
@@ -85,17 +86,76 @@ session = Session()
 # Definition for DB Interaction
 # =========================================
 
+# ===============================
+# Basic Function definition
+# ===============================
+
+
+class BaseMixin(object):
+    """
+    Some general Functionality for reusing
+    This Class and Functions are inherited in all other classes,
+    so it is easier just to define one "Base Class" with all needed
+    functionality
+    """
+
+    @declared_attr
+    def __tablename__(cls):
+        return cls.__name__.lower()
+
+    __table_args__ = {'mysql_engine': 'InnoDB'}
+
+    id = Column(Integer, primary_key=True)
+
+    @classmethod
+    def create(cls, **kw):
+        # Create a new Entry in the DB
+        obj = cls(**kw)
+        session.add(obj)
+        session.commit()
+        return obj.id
+
+    @classmethod
+    def delete(cls, id):
+        # Delete Entry based on ID
+        obj = session.query(cls).filter(cls.id == id).first()
+        session.delete(obj)
+        session.commit()
+
+    @classmethod
+    def get(cls, id):
+        # Return a specific result
+        result = session.query(cls).filter(cls.id == id).first()
+        # TODO: Enable more Filters for this querry !!!!
+        return result
+
+    @classmethod
+    def get_all(cls):
+        # Return all entrys in the DB
+        return session.query(cls).all()
+
+    @classmethod
+    def count(cls):
+        # Return the total count of all entrys
+        return session.query(cls).count()
+
+    @classmethod
+    def update(cls, id, **kw):
+        # Update a DB entry
+        # REVIEW: Does this actually work as expected?
+        obj = cls.get(id)
+        obj.update(**kw)
+        session.commit()
+
+
 # ===========
 # INVOICES
 # ===========
 
 
-class Invoice(Base):
+class Invoices(BaseMixin, Base):
     """ DB Interaction class for Invoices """
 
-    __tablename__ = 'invoices'
-
-    id = Column(Integer, primary_key=True)
     invoice_id = Column(VARCHAR)
     date = Column(Date)
     description = Column(VARCHAR)
@@ -107,37 +167,18 @@ class Invoice(Base):
     jobcode_id = Column(Integer, ForeignKey("jobtypes.id"))
     agency_id = Column(Integer, ForeignKey("agencys.id"))
 
-    customer = relationship("Customer", foreign_keys=[customer_id])
-    jobcode = relationship("Jobtype", foreign_keys=[jobcode_id])
-    agency = relationship("Agency", foreign_keys=[agency_id])
-
-    def get_all(self, arg):
-        pass
-
-    def get(self, arg):
-        pass
-
-    def update(self, arg):
-        pass
-
-    def edit(self, arg):
-        pass
-
-    def delete(self, arg):
-        pass
+    customer = relationship("Customers", foreign_keys=[customer_id])
+    jobtype = relationship("Jobtypes", foreign_keys=[jobcode_id])
+    agency = relationship("Agencys", foreign_keys=[agency_id])
 
 
 # ===========
 # CUSTOMERS
 # ===========
 
-
-class Customer(Base):
+class Customers(BaseMixin, Base):
     """ DB Interaction class for Customers """
 
-    __tablename__ = 'customers'
-
-    id = Column(Integer, primary_key=True)
     name = Column(VARCHAR)
     contact = Column(VARCHAR)
     street = Column(VARCHAR)
@@ -145,74 +186,23 @@ class Customer(Base):
     city = Column(VARCHAR)
     country = Column(VARCHAR)
 
-    def get_all(self, arg):
-        pass
-
-    def get(self, arg):
-        pass
-
-    def update(self, arg):
-        pass
-
-    def edit(self, arg):
-        pass
-
-    def delete(self, arg):
-        pass
-
 
 # ===========
 # AGENCYS
 # ===========
 
-class Agency(Base):
+class Agencys(BaseMixin, Base):
     """ DB Interaction class for Agencys """
 
-    __tablename__ = 'agencys'
-
-    id = Column(Integer, primary_key=True)
     name = Column(VARCHAR)
     percentage = Column(DECIMAL)
-
-    def get_all(self, arg):
-        pass
-
-    def get(self, arg):
-        pass
-
-    def update(self, arg):
-        pass
-
-    def edit(self, arg):
-        pass
-
-    def delete(self, arg):
-        pass
 
 
 # ===========
 # JOBTYYPES
 # ===========
 
-class Jobtype(Base):
+class Jobtypes(BaseMixin, Base):
     """ DB Interaction class for Jobtypes """
 
-    __tablename__ = 'jobtypes'
-
-    id = Column(Integer, primary_key=True)
     name = Column(VARCHAR)
-
-    def get_all(self, arg):
-        pass
-
-    def get(self, arg):
-        pass
-
-    def update(self, arg):
-        pass
-
-    def edit(self, arg):
-        pass
-
-    def delete(self, arg):
-        pass

@@ -4,8 +4,6 @@
 
 import sys
 from datetime import datetime
-
-#from HelperClasses import Costumer, Agency, Invoce, Jobtype
 from check_db import DB_Validation, DB_CreateDB, DB_CreateTables
 import database as DB
 from database import session as DB_Session
@@ -34,19 +32,20 @@ if __name__ == '__main__':
 
     print("Adding new Entry to the DB!")
 
-    new_Agency = DB.Agency(name="Agency ONE",
+    """
+    new_Agency = DB.Agencys(name="Agency ONE",
                            percentage=16.0)
 
-    new_Customer = DB.Customer(name="BaumSchule Winterberg E.V",
+    new_Customer = DB.Customers(name="BaumSchule Winterberg E.V",
                                contact="Marianna Winter",
                                street="This That Road 34",
                                postcode=12345,
                                city='Duesseldorf',
                                country="UK")
 
-    new_JobCode = DB.Jobtype(name="Super First Jobtype")
+    new_JobCode = DB.Jobtypes(name="Super First Jobtype")
 
-    new_Invoice = DB.Invoice(invoice_id="2021-001",
+    new_Invoice = DB.Invoices(invoice_id="2021-001",
                             date=datetime.now(),
                             description="This was a super Job",
                             invoice_ammount="2755.86",
@@ -55,10 +54,21 @@ if __name__ == '__main__':
                             customer_id=1,
                             jobcode_id=1,
                             agency_id=1)
+    """
 
-    DB_Session.add(new_Agency)
-    DB_Session.add(new_Customer)
-    DB_Session.add(new_JobCode)
-    DB_Session.add(new_Invoice)
+    ID = DB.Agencys.create(name="Agency FOUR",
+                           percentage=16.0)
 
-    DB_Session.commit()
+    print(f"The New ID is : {ID}")
+
+    #DB.Agencys.delete(ID)
+
+    #result = DB.Agencys.get_all()
+    #for i in result:
+    #    print(i.name)
+
+    Test = DB.Invoices.get(1)
+    print(Test.__dict__)
+
+
+    # DB_Session.commit()
