@@ -5,9 +5,10 @@
 import sys
 from datetime import datetime
 
-from HelperClasses import Costumer, Agency, Invoce, Jobtype
+#from HelperClasses import Costumer, Agency, Invoce, Jobtype
 from check_db import DB_Validation, DB_CreateDB, DB_CreateTables
 import database as DB
+from database import session as DB_Session
 from website import start
 
 
@@ -25,43 +26,39 @@ def CreateDBEntry():
     # DB Validation sucess and we can procees as normal
     print(f"Valid Database found : {db_config.get('address')} / {db_config.get('database')}")
 
-    #Test = DB.get_customer(5)[0]
-    #for i in Test:
-    #    print(f"{i} - {Test[i]}")
-    #DB.create_customer(dCustumer)
-    #DB.create_agency(dAgency)
-    #DB.create_jobtype(dJobtype)
-    #DB.create_invoice(dInvoice)
-
 
 if __name__ == '__main__':
 
     # Parse the config file
     config = DB._ParseConfig()
 
-    dCustumer = {'name': "BaumSchule Winterberg E.V",
-                 'contact': "Marianna Winter",
-                 'street': "This That Road 34",
-                 'postcode': 12345,
-                 'city': 'Duesseldorf',
-                 'country': "UK"}
+    print("Adding new Entry to the DB!")
 
-    dJobtype = {'name': "Super First Jobtype"}
+    new_Agency = DB.Agency(name="Agency ONE",
+                           percentage=16.0)
 
-    dAgency = {'name': "Agency ONE",
-               'percentage': 16.0}
+    new_Customer = DB.Customer(name="BaumSchule Winterberg E.V",
+                               contact="Marianna Winter",
+                               street="This That Road 34",
+                               postcode=12345,
+                               city='Duesseldorf',
+                               country="UK")
 
-    dInvoice = {'invoice_id': "2021-001",
-                'date': datetime.now(),
-                'description': "This was a super Job",
-                'invoice_ammount': "2755.86",
-                'invoice_mwst': "16",
-                'paydate': datetime.now(),
-                'customer_id': 1,
-                'jobcode_id': 1,
-                'agency_id': 1}
+    new_JobCode = DB.Jobtype(name="Super First Jobtype")
 
-    #start(config)
-    print("Hallo")
-    print(DB.get_invoice())
-    #main()
+    new_Invoice = DB.Invoice(invoice_id="2021-001",
+                            date=datetime.now(),
+                            description="This was a super Job",
+                            invoice_ammount="2755.86",
+                            invoice_mwst="16",
+                            paydate=datetime.now(),
+                            customer_id=1,
+                            jobcode_id=1,
+                            agency_id=1)
+
+    DB_Session.add(new_Agency)
+    DB_Session.add(new_Customer)
+    DB_Session.add(new_JobCode)
+    DB_Session.add(new_Invoice)
+
+    DB_Session.commit()
