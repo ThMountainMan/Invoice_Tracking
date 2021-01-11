@@ -1,10 +1,11 @@
 # Helper to interact with the Database
 
+import os
 import yaml
 import sqlalchemy as db
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, Date, VARCHAR, DECIMAL
+from sqlalchemy import Column, Integer, Date, VARCHAR, FLOAT
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declared_attr
 
@@ -17,11 +18,13 @@ def _ParseConfig():
 
 class Database:
     def __init__(self):
-        # Parse the config file to get the connection details
+        # Parse the config File
         self._ParseConfig()
         # Create the connection engine
-        self._engine = db.create_engine(f"mysql+pymysql://{self.user}:{self.pw}@{self.host}:{self.port}/{self.database}")
-        self._conn = self._engine.connect()
+        self._engine = db.create_engine(
+            self._CreateDbString(), echo=bool(int(self.config.get('debug'))))
+        self._session = sessionmaker(bind=self._engine)
+        self._Session = self._session()
 
     def __enter__(self):
         return self
@@ -32,42 +35,45 @@ class Database:
     def _ParseConfig(self):
         with open("../recources/db_config.yml", "r") as ymlfile:
             cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)
+        self.config = cfg
 
-        self.config = cfg["database"]
-        self.user = self.config.get('user')
-        self.pw = self.config.get('password')
-        self.host = self.config.get('address')
-        self.port = self.config.get('port')
-        self.database = self.config.get('database')
+    def _CreateDbString(self):
+        # In case we have a local DB File
+        if int(self.config.get('use_local')):
+            cur_path = os.path.dirname(os.path.abspath(__file__))
+            path = os.path.join(cur_path, 'db')
+            if not os.path.exists(path):
+                os.makedirs(path)
+            return f'sqlite:///{path}\\invoice_database.db'
+
+        # In Case we want to connect to a remote SQL DB
+        else:
+            self.db_config = self.config["database"]
+            self.user = self.db_config.get('user')
+            self.pw = self.db_config.get('password')
+            self.host = self.db_config.get('address')
+            self.port = self.db_config.get('port')
+            self.database = self.db_config.get('database')
+
+            return f"mysql+pymysql://{self.user}:{self.pw}@{self.host}:{self.port}/{self.database}"
 
     @property
     def connection(self):
+        self._conn = self._engine.connect()
         return self._conn
 
     @property
     def engine(self):
         return self._engine
 
-    def session(self):
-        return self._session
+    def ReturnSession(self):
+        return self._Session
 
     def close(self, commit=True):
-        self.connection.close()
+        self._session.close()
 
     def rollback(self):
-        self.connection.rollback()
-
-    def execute(self, sql, params=None):
-        pass
-
-    def fetchall(self):
-        pass
-
-    def fetchone(self):
-        pass
-
-    def query(self, sql, params=None):
-        pass
+        self._session.rollback()
 
 
 # =========================================
@@ -76,11 +82,9 @@ class Database:
 
 # Define the Base for the Database assignement
 Base = declarative_base()
-
 # Define a DB session
 dbObject = Database()
-Session = sessionmaker(bind=dbObject.engine)
-session = Session()
+session = dbObject.ReturnSession()
 
 # =========================================
 # Definition for DB Interaction
@@ -108,9 +112,9 @@ class BaseMixin(object):
     id = Column(Integer, primary_key=True)
 
     @classmethod
-    def create(cls, **kw):
+    def create(cls, obj):
         # Create a new Entry in the DB
-        obj = cls(**kw)
+        # check if the entry is already existant
         session.add(obj)
         session.commit()
         return obj.id
@@ -123,9 +127,14 @@ class BaseMixin(object):
         session.commit()
 
     @classmethod
-    def get(cls, id):
+    def get(cls, id=None, name=None):
         # Return a specific result
-        result = session.query(cls).filter(cls.id == id).first()
+        if name:
+            result = session.query(cls).filter(cls.name == name).first()
+        elif id:
+            result = session.query(cls).filter(cls.id == id).first()
+        else:
+            result = None
         # TODO: Enable more Filters for this querry !!!!
         return result
 
@@ -149,6 +158,18 @@ class BaseMixin(object):
 
 
 # ===========
+# VERSION
+# ===========
+
+class Version(Base):
+    """ Version to store the version nr of the DB """
+    # TODO: Implement a propper version control !!
+
+    __tablename__ = "version"
+    id = Column(Integer, primary_key=True)
+    version = Column(Integer)
+
+# ===========
 # INVOICES
 # ===========
 
@@ -159,8 +180,8 @@ class Invoices(BaseMixin, Base):
     invoice_id = Column(VARCHAR)
     date = Column(Date)
     description = Column(VARCHAR)
-    invoice_ammount = Column(DECIMAL)
-    invoice_mwst = Column(DECIMAL)
+    invoice_ammount = Column(FLOAT)
+    invoice_mwst = Column(FLOAT)
     paydate = Column(Date)
 
     customer_id = Column(Integer, ForeignKey("customers.id"))
@@ -195,7 +216,7 @@ class Agencys(BaseMixin, Base):
     """ DB Interaction class for Agencys """
 
     name = Column(VARCHAR)
-    percentage = Column(DECIMAL)
+    percentage = Column(FLOAT)
 
 
 # ===========
@@ -206,3 +227,7 @@ class Jobtypes(BaseMixin, Base):
     """ DB Interaction class for Jobtypes """
 
     name = Column(VARCHAR)
+
+
+# Create the Database based on the definition available in the File
+Base.metadata.create_all(dbObject.engine)
