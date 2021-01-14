@@ -5,22 +5,7 @@
   <meta charset="utf-8">
   <title>CCC Tracker</title>
   <style>
-    table {
-      font-family: arial, sans-serif;
-      border-collapse: collapse;
-      width: 100%;
-    }
 
-    td,
-    th {
-      border: 1px solid #dddddd;
-      text-align: left;
-      padding: 8px;
-    }
-
-    tr:nth-child(even) {
-      background-color: #dddddd;
-    }
   </style>
 </head>
 
@@ -29,17 +14,26 @@
   <header>
     <div class="container">
       <h1 class="logo">Agencys</h1>
-      <table>
-        <tr>
-          <th>Name</th>
-          <th>Percentage</th>
+      <br><a href="/agency_add" class="btn btn-primary"> Create New Agency </a><br><br>
+      <table class=" table">
+        <thead class="thead-light">
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Percentage</th>
+            <th>EDIT</th>
 
-        </tr>
+          </tr>
+        </thead>
         % for agency in input:
         <tr>
+          <td>{{agency.id}}</td>
           <td>{{agency.name}}</td>
           <td>{{agency.percentage}}</td>
-          <td> <button style="font-size:24px">EDIT<i class="fa fa-edit"></i></button> </td>
+          <td>
+            <button onclick="location.href = '/agency_edit/{{agency.id}}';" type="button" class="btn btn-warning btn-sm">EDIT</button>
+            <button onclick="location.href = '/agency_delete/{{agency.id}}';" type="button" class="btn btn-danger btn-sm">DELETE</button>
+          </td>
         </tr>
         % end
 

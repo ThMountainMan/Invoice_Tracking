@@ -1,55 +1,55 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
+
 <head>
   <meta charset="utf-8">
   <title>CCC Tracker</title>
   <style>
-    table {
-      font-family: arial, sans-serif;
-      border-collapse: collapse;
-      width: 100%;
-    }
 
-    td, th {
-      border: 1px solid #dddddd;
-      text-align: left;
-      padding: 8px;
-    }
 
-    tr:nth-child(even) {
-      background-color: #dddddd;
-    }
-</style>
+  </style>
 </head>
+
 <body>
   % include('base.tpl')
-   <header>
-     <div class="container">
-       <h1 class="logo">Customers</h1>
-       <table>
+  <header>
+    <div class="container">
+      <h1 class="logo">Customers</h1>
+      <br><a href="/customer_add" class="btn btn-primary"> Create New Customer </a><br><br>
+      <table class="table">
+        <thead class="thead-light">
           <tr>
+            <th>#</th>
             <th>Name</th>
-            <th>Contact</th>
+            <th>Contact Person</th>
+            <th>E-Mail</th>
             <th>Adress</th>
-            <th>Edit</th>
+            <th>EDIT</th>
           </tr>
-          % for customer in input:
-          <tr>
-            <td>{{customer.name}}</td>
-            <td>{{customer.contact}}</td>
-            <td>{{customer.street}} <br>
-                {{customer.postcode}} <br>
-                {{customer.city}} <br>
-                {{customer.country}} <br>
-            </td>
-            <td> <button style="font-size:24px">EDIT<i class="fa fa-edit"></i></button> </td>
-          </tr>
-          % end
+        </thead>
+        % for customer in input:
+        <tr>
+          <td>{{customer.id}}</td>
+          <td>{{customer.name}}</td>
+          <td>{{customer.contact}}</td>
+          <td>N/A</td>
+          <td>{{customer.street}} <br>
+            {{customer.postcode}} <br>
+            {{customer.city}} <br>
+            {{customer.country}} <br>
+          </td>
+          <td>
+            <button onclick="location.href = '/customer_edit/{{customer.id}}';" type="button" class="btn btn-warning btn-sm">EDIT</button>
+            <button onclick="location.href = '/customer_delete/{{customer.id}}';" type="button" class="btn btn-danger btn-sm">DELETE</button>
+          </td>
+        </tr>
+        % end
 
 
-     </div>
-   </header>
+    </div>
+  </header>
 
 
 </body>
+
 </html>

@@ -149,12 +149,24 @@ class BaseMixin(object):
         return session.query(cls).count()
 
     @classmethod
-    def update(cls, id, **kw):
+    def check_link(cls):
+        # TODO: Impement a method that checks if a foreign key is uesd in an
+        # Invoice or not, so that we can delete an object safely
+        pass
+
+    @classmethod
+    def update(cls, id, dUpdate):
         # Update a DB entry
         # REVIEW: Does this actually work as expected?
         obj = cls.get(id)
-        obj.update(**kw)
-        session.commit()
+        try:
+            for key, value in dUpdate.items():
+                if hasattr(obj, key):
+                    setattr(obj, key, value)
+
+            session.commit()
+        except Exception:
+            session.rollback()
 
 
 # ===========
@@ -192,15 +204,21 @@ class Invoices(BaseMixin, Base):
     jobtype = relationship("Jobtypes", foreign_keys=[jobcode_id])
     agency = relationship("Agencys", foreign_keys=[agency_id])
 
+    @classmethod
+    def get_latest_id(cls):
+        obj = session.query(cls).order_by(cls.id.desc()).first()
+        return obj.id + 1
 
 # ===========
 # CUSTOMERS
 # ===========
 
+
 class Customers(BaseMixin, Base):
     """ DB Interaction class for Customers """
 
     name = Column(VARCHAR)
+    #email = Column(VARCHAR)
     contact = Column(VARCHAR)
     street = Column(VARCHAR)
     postcode = Column(Integer)
