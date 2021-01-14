@@ -15,14 +15,20 @@ usefull that is need in my day to day life. Currenty i keept track of Invoices w
 ## The initial Steps are :
 
 ### Create a Python Script with basic functionality
-- [ ] Create / select Customer Address
+- [x] Create / Edit Invoice
+- [x] Create / Edit Customer
+- [x] Create / Edit Agency
+- [x] Create / Edit Job Type
 - [ ] Get an overview of the Monthly / Yearly Income
 - [ ] Track unpaied invoices
 
 ### Store The Information
 - [ ] Store the Data in CSV Format
-- [ ] Extend the functionality to store the information in MySQL Database
+- [x] Extend the functionality to store the information in MySQL Database
 
 ### Create a GUI for Interaction
 - [ ] Create a GUI
-- [ ] Create a Webinterface
+- [x] Create a Webinterface
+
+### Create Invoices
+- [ ] Create a Invoice Template in HTML
