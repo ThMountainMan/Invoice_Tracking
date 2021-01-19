@@ -43,18 +43,21 @@
 
     li a.active {
       color: white;
-      background-color: #4CAF50;
+      background-color: #3627C4;
     }
   </style>
 </head>
 
 <body>
 
-  <ul>
+  <ul class="navigation">
     <li><a class="active" href="/">INVOICES</a></li>
+    <li><a href="/expenses">EXPENSES</a></li>
     <li><a href="/customers">CUSTOMERS</a></li>
     <li><a href="/jobtypes">JOBTYPES</a></li>
     <li><a href="/agencys">AGENCYS</a></li>
+    <li><a href="/personal">PERSONAL DETAILS</a></li>
+    <li><a href="/payment">PAYMENT DETAILS</a></li>
   </ul>
   <br>
 </body>

@@ -5,8 +5,8 @@ import yaml
 import sqlalchemy as db
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, Date, VARCHAR, FLOAT
-from sqlalchemy import ForeignKey
+from sqlalchemy import Column, Integer, Date, VARCHAR, FLOAT, JSON
+from sqlalchemy import ForeignKey, extract
 from sqlalchemy.ext.declarative import declared_attr
 
 
@@ -181,6 +181,71 @@ class Version(Base):
     id = Column(Integer, primary_key=True)
     version = Column(Integer)
 
+
+# ===========
+# Personal Details
+# ===========
+
+
+class PersonalDetails(BaseMixin, Base):
+    """ DB Interaction for personal Details """
+
+    label = Column(VARCHAR)
+
+    name_company = Column(VARCHAR)
+    name = Column(VARCHAR)
+
+    street = Column(VARCHAR)
+    postcode = Column(Integer)
+    city = Column(VARCHAR)
+
+    mail = Column(VARCHAR)
+    phone = Column(VARCHAR)
+
+    taxnumber = Column(VARCHAR)
+
+    payment_id = Column(Integer, ForeignKey("paymentdetails.id"))
+    payment_datails = relationship("PaymentDetails", foreign_keys=[payment_id])
+
+
+class PaymentDetails(BaseMixin, Base):
+    """ DB Interaction for payment Details """
+
+    label = Column(VARCHAR)
+
+    name = Column(VARCHAR)
+    bank = Column(VARCHAR)
+    IBAN = Column(VARCHAR)
+    BIC = Column(VARCHAR)
+
+
+# ===========
+# EXPENSES
+# ===========
+
+class Expenses(BaseMixin, Base):
+    """ DB Interaction class for Expenses """
+
+    expense_id = Column(VARCHAR)
+    date = Column(Date)
+    cost = Column(FLOAT)
+    comment = Column(VARCHAR)
+
+    @classmethod
+    def get_latest_id(cls):
+        obj = session.query(cls).order_by(cls.id.desc()).first()
+        if not obj:
+            return 1
+        return obj.id + 1
+
+    @classmethod
+    def get_all(cls, year=None):
+        if year:
+            # Return DB entrys filterd by year
+            return session.query(cls).filter(extract('year', cls.date) == int(year)).all()
+        else:
+            # Return all entrys in the DB
+            return session.query(cls).all()
 # ===========
 # INVOICES
 # ===========
@@ -195,6 +260,7 @@ class Invoices(BaseMixin, Base):
     invoice_ammount = Column(FLOAT)
     invoice_mwst = Column(FLOAT)
     paydate = Column(Date)
+    invoice_data = Column(JSON)
 
     customer_id = Column(Integer, ForeignKey("customers.id"))
     jobcode_id = Column(Integer, ForeignKey("jobtypes.id"))
@@ -207,9 +273,19 @@ class Invoices(BaseMixin, Base):
     @classmethod
     def get_latest_id(cls):
         obj = session.query(cls).order_by(cls.id.desc()).first()
+        if not obj:
+            return 1
         return obj.id + 1
 
-# ===========
+    @classmethod
+    def get_all(cls, year=None):
+        if year:
+            # Return DB entrys filterd by year
+            return session.query(cls).filter(extract('year', cls.date) == int(year)).all()
+        else:
+            # Return all entrys in the DB
+            return session.query(cls).all()
+    # ===========
 # CUSTOMERS
 # ===========
 
@@ -218,7 +294,8 @@ class Customers(BaseMixin, Base):
     """ DB Interaction class for Customers """
 
     name = Column(VARCHAR)
-    #email = Column(VARCHAR)
+    email = Column(VARCHAR)
+    phone = Column(VARCHAR)
     contact = Column(VARCHAR)
     street = Column(VARCHAR)
     postcode = Column(Integer)

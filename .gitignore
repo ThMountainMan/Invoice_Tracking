@@ -1,5 +1,8 @@
 *_config.yml
 *.pyc
 *.db
-
+*.
+*.map
+*.css
+*.js
 _test/

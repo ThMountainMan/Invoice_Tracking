@@ -11,9 +11,11 @@
       margin: 1 auto;
     }
 
-    .form-group.required .control-label:after {
-      content: "*";
+    .form-group.required .control-label:before {
       color: red;
+      content: "*";
+      position: absolute;
+      margin-left: -15px;
     }
   </style>
 </head>
@@ -21,47 +23,36 @@
 <body>
   % include('base.tpl')
   <header>
-    <div class="container">
-
-      % if jobtype:
-      <h1 class="logo">Edit Jobtype "{{jobtype.name}}"</h1>
-      <form class="p-3" method="post" action="/jobtype_edit/{{jobtype.id}}">
-        % else:
-        <h1 class="logo">Add New Jobtype</h1>
-        <form class="p-3" method="post" action="/jobtype_add">
-          % end
-
-          <div class="form-group">
-            <b><label class='control-label' for="fname">Jobtype:</label></b>
-            % if jobtype:
-            <input type="text" id="name" class="form-control" name="name" value="{{jobtype.name}}">
-            % else:
-            <input type="text" id="name" class="form-control" name="name" style="color:#888;" value="Name" onfocus="inputFocus(this)" onblur="inputBlur(this)">
-            % end
-          </div>
-
-
-          <input type="submit" class="btn btn-primary" value="Submit">
-
-        </form>
-    </div>
   </header>
+  <div class="container">
+
+    % if jobtype:
+    <h1 class="logo">Edit Jobtype "{{jobtype.name}}"</h1>
+    <form class="p-3" method="post" action="/jobtype_edit/{{jobtype.id}}">
+
+      <div class="form-group required">
+        <b><label class='control-label'>Jobtype:</label></b>
+        <input type="text" id="name" class="form-control" name="name" value="{{jobtype.name}}" required>
+      </div>
+      <input type="submit" class="btn btn-primary" value="Submit">
+    </form>
+
+    % else:
+
+    <h1 class="logo">Add New Jobtype</h1>
+    <form class="p-3" method="post" action="/jobtype_add">
+
+      <div class="form-group required">
+        <b><label class='control-label' for="fname">Jobtype:</label></b>
+        <input type="text" id="name" class="form-control" name="name" required>
+      </div>
+      <input type="submit" class="btn btn-primary" value="Submit" id="confirm">
+
+    </form>
+
+    % end
+
+  </div>
 </body>
-
-<script>
-  function inputFocus(i) {
-    if (i.value == i.defaultValue) {
-      i.value = "";
-      i.style.color = "#000";
-    }
-  }
-
-  function inputBlur(i) {
-    if (i.value == "") {
-      i.value = i.defaultValue;
-      i.style.color = "#888";
-    }
-  }
-</script>
 
 </html>

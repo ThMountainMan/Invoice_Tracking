@@ -10,59 +10,59 @@
       display: block;
       margin: 1 auto;
     }
+
+    .form-group.required .control-label:before {
+      color: red;
+      content: "*";
+      position: absolute;
+      margin-left: -15px;
+    }
   </style>
 </head>
 
 <body>
   % include('base.tpl')
-  <header>
-    <div class="container">
-      % if agency:
-      <h1 class="logo">Edit agency "{{agency.name}}"</h1>
-      <form class="p-3" method="post" action="/agency_edit/{{agency.id}}">
-        % else:
-        <h1 class="logo">Add New agency</h1>
-        <form class="p-3" method="post" action="/agency_add">
-          % end
 
-          <div class="form-group">
-            <b><label for="fname">Name:</label></b>
-            % if agency:
-            <input type="text" id="name" class="form-control" name="name" value="{{agency.name}}">
-            % else:
-            <input type="text" id="name" class="form-control" name="name" style="color:#888;" value="Agency Name" onfocus="inputFocus(this)" onblur="inputBlur(this)">
-            % end
-          </div>
+  <div class="container">
 
-          <div class="form-group">
-            <b><label for="date">Percentage:</label></b>
-            % if agency:
-            <input type="number" id="percentage" class="form-control" name="percentage" value="{{agency.percentage}}">
-            % else:
-            <input type="number" id="percentage" class="form-control" name="percentage" min="0" max="20" value="16">
-            %end
-          </div>
+    % if agency:
+    <h1 class="logo">Edit agency "{{agency.name}}"</h1>
+    <form class="p-3" method="post" action="/agency_edit/{{agency.id}}">
 
-          <input type="submit" class="btn btn-primary" value="Submit">
-        </form>
-    </div>
-  </header>
+      <div class="form-group required">
+        <b><label class='control-label' for="fname">Name:</label></b>
+        <input type="text" id="name" class="form-control" name="name" value="{{agency.name}}" required>
+      </div>
+
+      <div class="form-group required">
+        <b><label class='control-label' for="date">Percentage:</label></b>
+        <input type="number" id="percentage" class="form-control" name="percentage" value="{{agency.percentage}}" required>
+      </div>
+
+      <input type="submit" class="btn btn-primary" value="Submit">
+    </form>
+
+
+    % else:
+    <h1 class="logo">Add New agency</h1>
+    <form class="p-3" method="post" action="/agency_add">
+
+      <div class="form-group required">
+        <b><label class='control-label' for="fname">Name:</label></b>
+        <input type="text" id="name" class="form-control" name="name" required>
+      </div>
+
+      <div class="form-group required">
+        <b><label class='control-label' for="date">Percentage:</label></b>
+        <input type="number" id="percentage" class="form-control" name="percentage" min="0" max="20" value="16" required>
+      </div>
+
+      <input type="submit" class="btn btn-primary" value="Submit">
+
+    </form>
+    % end
+
+  </div>
 </body>
-
-<script>
-  function inputFocus(i) {
-    if (i.value == i.defaultValue) {
-      i.value = "";
-      i.style.color = "#000";
-    }
-  }
-
-  function inputBlur(i) {
-    if (i.value == "") {
-      i.value = i.defaultValue;
-      i.style.color = "#888";
-    }
-  }
-</script>
 
 </html>

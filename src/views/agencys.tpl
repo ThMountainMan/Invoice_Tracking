@@ -7,10 +7,12 @@
   <style>
 
   </style>
+
+  % include('base.tpl')
 </head>
 
 <body>
-  % include('base.tpl')
+
   <header>
     <div class="container">
       <h1 class="logo">Agencys</h1>

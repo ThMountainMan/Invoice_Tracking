@@ -1,31 +1,62 @@
 import database as DB
+from dateutil import parser
 
+print("Adding new Entry to the DB!")
 
-def filldb():
-    print("Adding new Entry to the DB!")
+new_payment = DB.PaymentDetails(label="Test Account",
+                                name="Klaus Albers",
+                                bank="Butterbrot Bank",
+                                IBAN="125454-dfsdf-45454",
+                                BIC="1234567")
 
-    new_Agency = DB.Agencys(name="Agency ONE", percentage=16.0)
+new_personal = DB.PersonalDetails(label="Test Person",
+                                  name_company="Nothing CoKg",
+                                  name="Hans Wurst",
+                                  street="Schinkenstrasse 45",
+                                  postcode=45356,
+                                  city="Darmstadt",
+                                  mail="hans@wurst.de",
+                                  phone=11123456,
+                                  payment_id=1)
 
-    new_Customer = DB.Customers(name="BaumSchule Winterberg E.V",
-                                contact="Marianna Winter",
-                                street="This That Road 34",
-                                postcode=12345,
-                                city='Duesseldorf',
-                                country="UK")
+new_expense = DB.Expenses(expense_id="2020-001",
+                          date=parser.parse("2020-01-01"),
+                          cost=1234,
+                          comment="This is a test Expense")
 
-    new_JobCode = DB.Jobtypes(name="Super First Jobtype")
+new_Agency = DB.Agencys(name="Agency Stargazer",
+                        percentage=10)
 
-    new_Invoice = DB.Invoices(invoice_id="2021-001",
-                              date=datetime.now(),
-                              description="This was a super Job",
-                              invoice_ammount="2755.86",
-                              invoice_mwst="16",
-                              paydate=datetime.now(),
-                              customer_id=1,
-                              jobcode_id=1,
-                              agency_id=1)
+new_jobtype = DB.Jobtypes(name="Test Job")
 
-    DB.Agencys.create(new_Agency)
-    DB.Customers.create(new_Customer)
-    DB.Jobtypes.create(new_JobCode)
-    DB.Invoices.create(new_Invoice)
+new_customer = DB.Customers(name="Agency Hupentitt",
+                            contact="Tittz Mc Gee",
+                            email="this@that.de",
+                            phone=101234568,
+                            street="Wumsstreet 56",
+                            postcode=123456,
+                            city="Hannesburg",
+                            country="Germany")
+
+new_invoice = DB.Invoices(invoice_id="2021-001",
+                          date=parser.parse("2021-02-02"),
+                          description="This is a Test invoice",
+                          invoice_ammount=1234,
+                          invoice_mwst=16,
+                          paydate=None,
+                          customer_id=1,
+                          jobcode_id=1,
+                          agency_id=1,
+                          invoice_data={'comment': "Item has been sold and I have done this",
+                                        'ammount': 4,
+                                        'price': 45})
+
+DB.PaymentDetails.create(new_payment)
+DB.PersonalDetails.create(new_personal)
+DB.Expenses.create(new_expense)
+
+DB.Agencys.create(new_Agency)
+DB.Customers.create(new_customer)
+DB.Jobtypes.create(new_jobtype)
+
+DB.Invoices.create(new_invoice)

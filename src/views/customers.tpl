@@ -22,7 +22,7 @@
             <th>#</th>
             <th>Name</th>
             <th>Contact Person</th>
-            <th>E-Mail</th>
+            <th>Contact Details</th>
             <th>Adress</th>
             <th>EDIT</th>
           </tr>
@@ -32,7 +32,9 @@
           <td>{{customer.id}}</td>
           <td>{{customer.name}}</td>
           <td>{{customer.contact}}</td>
-          <td>N/A</td>
+          <td>{{customer.email}}<br>
+            {{customer.phone}}
+          </td>
           <td>{{customer.street}} <br>
             {{customer.postcode}} <br>
             {{customer.city}} <br>
