@@ -41,7 +41,7 @@
 
       <div class="form-group">
         <b><label class='control-label' for="fname">E-Mail:</label></b>
-        <input type="text" id="email" class="form-control" name="email" value="{{customer.email}}">
+        <input type="email" id="email" class="form-control" name="email" value="{{customer.email}}">
       </div>
 
       <div class="form-group">

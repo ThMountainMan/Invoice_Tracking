@@ -11,34 +11,31 @@
 
 <body>
   % include('base.tpl')
-  <header>
-    <div class="container">
-      <h1 class="logo">Jobtypes</h1>
-      <br><a href="/jobtype_add" class="btn btn-primary"> Create New Jobtype </a><br><br>
-      <table class=" table">
-        <thead class="thead-light">
-          <tr>
-            <th>#</th>
-            <th>Name</th>
-            <th>EDIT</th>
-          </tr>
-        </thead>
-        % for jobtype in input:
+  <div class="container">
+    <h1 class="logo">Jobtypes</h1>
+    <br><a href="/jobtype_add" class="btn btn-primary"> Create New Jobtype </a><br><br>
+    <table class=" table">
+      <thead class="thead-light">
         <tr>
-          <td>{{jobtype.id}}</td>
-          <td>{{jobtype.name}}</td>
-          <td>
-            <button onclick="location.href = '/jobtype_edit/{{jobtype.id}}';" type="button" class="btn btn-warning btn-sm">EDIT</button>
-            <button onclick="location.href = '/jobtype_delete/{{jobtype.id}}';" type="button" class="btn btn-danger btn-sm">DELETE</button>
-          </td>
+          <th>#</th>
+          <th>Name</th>
+          <th>EDIT</th>
         </tr>
-        % end
+      </thead>
+      % for jobtype in input:
+      <tr>
+        <td>{{jobtype.id}}</td>
+        <td>{{jobtype.name}}</td>
+        <td>
+          <button onclick="location.href = '/jobtype_edit/{{jobtype.id}}';" type="button" class="btn btn-warning btn-sm">EDIT</button>
+          <button onclick="location.href = '/jobtype_delete/{{jobtype.id}}';" type="button" class="btn btn-danger btn-sm">DELETE</button>
+
+        </td>
+      </tr>
+      % end
 
 
-    </div>
-  </header>
-
-
+  </div>
 </body>
 
 </html>

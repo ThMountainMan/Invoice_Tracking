@@ -5,4 +5,6 @@
 *.map
 *.css
 *.js
+*.log
+*.pdf
 _test/

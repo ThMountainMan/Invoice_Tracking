@@ -40,10 +40,10 @@
           {{data.city}}
         </td>
         <td>
-          {{data.payment_datails.name}}<br>
-          {{data.payment_datails.bank}}<br>
-          {{data.payment_datails.IBAN}}<br>
-          {{data.payment_datails.BIC}}<br>
+          {{data.payment_details.name}}<br>
+          {{data.payment_details.bank}}<br>
+          {{data.payment_details.IBAN}}<br>
+          {{data.payment_details.BIC}}<br>
         </td>
         <td>
           <button onclick="location.href = '/personal_edit/{{data.id}}';" type="button" class="btn btn-warning btn-sm">EDIT</button>

@@ -14,7 +14,7 @@
     }
 
     .open {
-      background-color: #FBFF9E
+      background-color: #FBFF93
     }
 
     form {
@@ -29,7 +29,8 @@
   % include('base.tpl')
   <header>
     <div class="container">
-      <h1 class="logo">Overview</h1>
+      <h1 class="logo">Total Overview <p id="currentYear"></p>
+      </h1>
 
       <table class=" table" id="cssTable">
         <thead class="thead-light">
@@ -41,16 +42,18 @@
         </thead>
         </tr>
         <tr>
-          <td>€ {{overview['income']}}</td>
-          <td>€ {{overview['outstanding']}}</td>
-          <td>€ {{overview['expenses']}}</td>
-          % if overview['income'] - overview['expenses'] > 0:
-          <td class="posivie">€ {{overview['income'] - overview['expenses']}}</td>
+          <td><b>€ {{overview['income']}}</b></td>
+          <td class="open"><b>€ {{overview['outstanding']}}</b></td>
+          <td><b>€ {{overview['expenses']}}</b></td>
+          % if overview['profit'] >= 0:
+          <td class="positive"><b>€ {{overview['profit']}}</b></td>
           %else:
-          <td class="negative">€ {{overview['income'] - overview['expenses']}}</td>
+          <td class="negative"><b>€ {{overview['profit']}}</b></td>
           %end
         </tr>
       </table>
+
+      <br>
 
       <div>
         <h1 class="logo">All available invoices </h1>
@@ -58,15 +61,26 @@
         <div class="row">
           <div class="col-sm-2 form-inline">
             <label for="filter_year" class="col-lg-4">Year:</label>
-            <select name="filter_year" class="form-control w-100" id="dropdownYear" style="width: 120px;" onchange="location = this.value;"></select>
+            <select name="filter_year" class="form-control w-100" id="dropdownYear" style="width: 120px;" onchange="location = this.value;">
+              <option value="/invoices" selected>ALL</option>
+            </select>
           </div>
           <div class="col-sm-2">
-            <label for="filter_jobtype">Jobtype:</label>
-            <select name="filter_jobtype" class="form-control w-100" id="filter_jobtype" style="width: 120px;" onchange="location = this.value;"></select>
+            <label for="filter_jobtype">Jobtypes:</label>
+            <select name="filter_jobtype" class="form-control w-100" id="filter_jobtype" style="width: 120px;" onchange="location = this.value;">
+              <option value="/invoices" selected>--</option>
+              % for jobtype in jobtypes:
+              <option value="/invoices_filter/jobytpes/{{jobtype.id}}">{{jobtype.name}}</option>
+              % end
+            </select>
           </div>
-          <div class="col-sm-2">
+          <div class=" col-sm-2">
             <label for="filter_status">Status:</label>
-            <select name="filter_status" class="form-control w-100" id="filter_status" style="width: 120px;" onchange="location = this.value;"></select>
+            <select name="filter_status" class="form-control w-100" id="filter_status" style="width: 120px;" onchange="location = this.value;">
+              <option value="/invoices" selected>--</option>
+              <option value="/invoices_filter/status/1">OPEN</option>
+              <option value="/invoices_filter/status/2">PAYED</option>
+            </select>
           </div>
 
         </div>
@@ -83,7 +97,7 @@
               <th>Job Type</th>
               <th>Ammount</th>
               <th>Paydate</th>
-              <th>Download</th>
+              <th>Download / EDIT</th>
           </thead>
           </tr>
           % for invoice in input:
@@ -92,11 +106,11 @@
             % else:
           <tr style="background-color: #FBFF93;">
             % end
-            <td><a href="/invoice_show/{{invoice.id}}">{{invoice.invoice_id}}</a></td>
+            <td><b><a href="/invoice_show/{{invoice.id}}">{{invoice.invoice_id}}</a></b></td>
             <td>{{invoice.date}}</td>
             <td>{{invoice.customer.name}}</td>
             <td>{{invoice.jobtype.name}}</td>
-            <td>{{invoice.invoice_ammount}} €</td>
+            <td><b> € {{invoice.invoice_ammount}}</b></td>
             % if invoice.paydate:
             <td>{{invoice.paydate}}</td>
             %else:
@@ -110,7 +124,8 @@
             </td>
             %end
             <td>
-              <button class="btn btn-primary btn-sm"><i class="fa fa-download"></i></button>
+              <button onclick="location.href = '/invoice_print/{{invoice.id}}';" class="btn btn-primary btn-sm"><i class="fa fa-download"></i></button>
+              <button onclick="location.href = '/invoice_edit/{{invoice.id}}';" type="button" class="btn btn-warning btn-sm">EDIT</button>
               <button onclick="location.href = '/invoice_delete/{{invoice.id}}';" type="button" class="btn btn-danger btn-sm">DELETE</button>
             </td>
           </tr>
@@ -131,6 +146,8 @@
     currentYear = (new Date()).getFullYear();
     startYear = currentYear - 3;
     endYear = currentYear;
+
+    document.getElementById('currentYear').innerHTML = pathArray[2];
 
     for (i = startYear; i <= endYear; i++) {
       newOption = document.createElement("option");

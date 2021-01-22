@@ -9,9 +9,14 @@ from sqlalchemy import Column, Integer, Date, VARCHAR, FLOAT, JSON
 from sqlalchemy import ForeignKey, extract
 from sqlalchemy.ext.declarative import declared_attr
 
+import logging
+
+# Init the Logger
+log = logging.getLogger(__name__)
+
 
 def _ParseConfig():
-    with open("../recources/db_config.yml", "r") as ymlfile:
+    with open("db_config.yml", "r") as ymlfile:
         cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)
     return cfg
 
@@ -33,7 +38,7 @@ class Database:
         self.close()
 
     def _ParseConfig(self):
-        with open("../recources/db_config.yml", "r") as ymlfile:
+        with open("db_config.yml", "r") as ymlfile:
             cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)
         self.config = cfg
 
@@ -115,9 +120,14 @@ class BaseMixin(object):
     def create(cls, obj):
         # Create a new Entry in the DB
         # check if the entry is already existant
-        session.add(obj)
-        session.commit()
-        return obj.id
+        try:
+            session.add(obj)
+            session.commit()
+            return obj.id
+        except Exception as e:
+            session.rollback()
+            log.error(f"Not able to creare object in '{__tablename__}' with the Error:\n{e}")
+        return None
 
     @classmethod
     def delete(cls, id):
@@ -205,7 +215,7 @@ class PersonalDetails(BaseMixin, Base):
     taxnumber = Column(VARCHAR)
 
     payment_id = Column(Integer, ForeignKey("paymentdetails.id"))
-    payment_datails = relationship("PaymentDetails", foreign_keys=[payment_id])
+    payment_details = relationship("PaymentDetails", foreign_keys=[payment_id])
 
 
 class PaymentDetails(BaseMixin, Base):
@@ -265,10 +275,12 @@ class Invoices(BaseMixin, Base):
     customer_id = Column(Integer, ForeignKey("customers.id"))
     jobcode_id = Column(Integer, ForeignKey("jobtypes.id"))
     agency_id = Column(Integer, ForeignKey("agencys.id"))
+    personal_id = Column(Integer, ForeignKey("personaldetails.id"))
 
     customer = relationship("Customers", foreign_keys=[customer_id])
     jobtype = relationship("Jobtypes", foreign_keys=[jobcode_id])
     agency = relationship("Agencys", foreign_keys=[agency_id])
+    personal = relationship("PersonalDetails", foreign_keys=[personal_id])
 
     @classmethod
     def get_latest_id(cls):

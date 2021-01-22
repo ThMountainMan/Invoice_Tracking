@@ -65,7 +65,7 @@
 
         <div class="form-group required">
           <b><label class='control-label'>E-Mail:</label></b>
-          <input type="text" id="mail" class="form-control" name="mail" value="{{data.mail}}" required>
+          <input type="email" id="mail" class="form-control" name="mail" value="{{data.mail}}" required>
         </div>
 
         <div class="form-group required">
