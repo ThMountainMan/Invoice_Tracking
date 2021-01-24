@@ -1,6 +1,6 @@
 from datetime import datetime
 from dateutil import parser
-from database import _ParseConfig
+from app_config import AppConfig
 import database as DB
 
 import bottle
@@ -22,7 +22,6 @@ log = logging.getLogger(__name__)
 @route("/invoices")
 @route("/")
 def invoices(year=None):
-    print(request.url)
     # If there is a year specified, gett all invoices for this years
     Data = DB.Invoices.get_all(year)
     Expenses = DB.Expenses.get_all(year)
@@ -32,8 +31,8 @@ def invoices(year=None):
     income = sum([res.invoice_ammount for res in Data if res.paydate])
     outstanding = sum([res.invoice_ammount for res in Data if not res.paydate])
     expenses = sum([res.cost for res in Expenses])
-    dOverview = {'income': income, 'outstanding': outstanding,
-                 'expenses': expenses, 'profit': income - expenses}
+    dOverview = {'income': round(income, 2), 'outstanding': round(outstanding, 2),
+                 'expenses': round(expenses, 2), 'profit': round(income - expenses, 2)}
     # Return the template with the data
     return template("invoices.tpl", overview=dOverview, input=Data, jobtypes=jobtypes)
 
@@ -49,10 +48,10 @@ def invoice_get(id=None):
     item_comment = Data.invoice_data['comment']
     item_price = round(float(Data.invoice_data['price']), 2)
     item_count = round(float(Data.invoice_data['ammount']), 2)
-    invoice_subtotal = item_price * item_count
+    invoice_subtotal = round(item_price * item_count, 2)
 
     invoice_mwst = round(Data.invoice_ammount * (Data.invoice_mwst / 100), 2)
-    invoice_total = Data.invoice_ammount + invoice_mwst
+    invoice_total = round(Data.invoice_ammount + invoice_mwst, 2)
 
     return template("Invoice/Invoice_V1.tpl",
                     invoice=Data,
@@ -63,7 +62,8 @@ def invoice_get(id=None):
 
 @ route("/invoice_print/<id>")
 def invoice_print(id=None):
-    export.export_to_pdf(f"http://localhost:8080/invoice_show/{id}", id)
+    Data = DB.Invoices.get(id)
+    export.export_to_pdf(f"http://localhost:8080/invoice_show/{id}", Data)
     redirect("/invoices")
 
 
@@ -80,12 +80,12 @@ def invoice_add(id=None):
         # Data Postprocessing before submitting to DB
         # for i in range(1,)
         item_comment = Data.get('comment1')
-        item_price = float(Data.get('price1'))
+        item_price = round(float(Data.get('price1')), 2)
         item_count = float(Data.get('ammount1'))
-        invoice_subtotal = item_price * item_count
+        invoice_subtotal = round(item_price * item_count, 2)
 
         invoice_mwst = round(invoice_subtotal * (float(Data.get('mwst')) / 100), 2)
-        invoice_total = invoice_subtotal + invoice_mwst
+        invoice_total = round(invoice_subtotal + invoice_mwst, 2)
 
         print(type((Data.get('customer_id'))))
         # Prepare the Data for DB input
@@ -377,8 +377,9 @@ def expense_edit(id=None):
     # If the reueast was to edit an expense
     else:
         Data = DB.Expenses.get(id) if id else None
+        newid = f"{datetime.now().year}-{DB.Expenses.get_latest_id():03}"
         # Return the template with the DB data
-        return template("expenses_edit.tpl", expense=Data)
+        return template("expenses_edit.tpl", expense=Data, new_id=newid)
 
 
 @ route("/expense_delete/<id>")
@@ -547,8 +548,6 @@ def server_static_css(filename):
 
 
 if __name__ == '__main__':
+    bottle.debug(False)
 
-    config = _ParseConfig()
-    port = config['webserver'].get('port')
-    bottle.debug(True)
-    bottle.run(host='0.0.0.0', port=port)
+    bottle.run(host=AppConfig.web_host, port=AppConfig.web_port)

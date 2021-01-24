@@ -5,17 +5,16 @@
   <meta charset="utf-8">
   <title>CCC Tracker</title>
   <style>
-
   </style>
 </head>
 
 <body>
   % include('base.tpl')
   <header>
-    <div class="container">
+    <div class="container-fluid">
       <h1 class="logo">Expenses</h1>
       <br><a href="/expense_add" class="btn btn-primary"> Add New Expense </a><br><br>
-      <table class=" table">
+      <table class="table">
         <thead class="thead-light">
           <tr>
             <th>Expense ID</th>

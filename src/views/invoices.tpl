@@ -22,13 +22,19 @@
       padding: 0px;
       display: inline;
     }
+
+    p {
+      margin: 0;
+      display: inline;
+      float: center;
+    }
   </style>
 </head>
 
 <body>
   % include('base.tpl')
   <header>
-    <div class="container">
+    <div class="container-fluid">
       <h1 class="logo">Total Overview <p id="currentYear"></p>
       </h1>
 
@@ -43,7 +49,11 @@
         </tr>
         <tr>
           <td><b>€ {{overview['income']}}</b></td>
+          % if overview['outstanding'] > 0:
           <td class="open"><b>€ {{overview['outstanding']}}</b></td>
+          %else:
+          <td><b>€ {{overview['outstanding']}}</b></td>
+          %end
           <td><b>€ {{overview['expenses']}}</b></td>
           % if overview['profit'] >= 0:
           <td class="positive"><b>€ {{overview['profit']}}</b></td>
@@ -67,7 +77,7 @@
           </div>
           <div class="col-sm-2">
             <label for="filter_jobtype">Jobtypes:</label>
-            <select name="filter_jobtype" class="form-control w-100" id="filter_jobtype" style="width: 120px;" onchange="location = this.value;">
+            <select name="filter_jobtype" class="form-control w-100" id="filter_jobtype" style="width: 120px;" onchange="location = this.value;" disabled>
               <option value="/invoices" selected>--</option>
               % for jobtype in jobtypes:
               <option value="/invoices_filter/jobytpes/{{jobtype.id}}">{{jobtype.name}}</option>
@@ -76,7 +86,7 @@
           </div>
           <div class=" col-sm-2">
             <label for="filter_status">Status:</label>
-            <select name="filter_status" class="form-control w-100" id="filter_status" style="width: 120px;" onchange="location = this.value;">
+            <select name="filter_status" class="form-control w-100" id="filter_status" style="width: 120px;" onchange="location = this.value;" disabled>
               <option value="/invoices" selected>--</option>
               <option value="/invoices_filter/status/1">OPEN</option>
               <option value="/invoices_filter/status/2">PAYED</option>
@@ -102,9 +112,9 @@
           </tr>
           % for invoice in input:
           % if invoice.paydate:
-          <tr>
+          <tr style="background-color:#F6FFF6;">
             % else:
-          <tr style="background-color: #FBFF93;">
+          <tr style=" background-color: #FBFF93;">
             % end
             <td><b><a href="/invoice_show/{{invoice.id}}">{{invoice.invoice_id}}</a></b></td>
             <td>{{invoice.date}}</td>

@@ -12,7 +12,7 @@
 <body>
   % include('base.tpl')
 
-  <div class="container">
+  <div class="container-fluid">
     <h1 class="logo">Personal Data</h1>
     <br><a href="/personal_add" class="btn btn-primary"> Add New Company / Personal Data </a><br><br>
     <table class=" table">

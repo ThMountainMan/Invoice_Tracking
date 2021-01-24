@@ -11,7 +11,7 @@
 
 <body>
   % include('base.tpl')
-  <div class="container">
+  <div class="container-fluid">
     <h1 class="logo">Jobtypes</h1>
     <br><a href="/jobtype_add" class="btn btn-primary"> Create New Jobtype </a><br><br>
     <table class=" table">

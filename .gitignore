@@ -1,10 +1,9 @@
-*_config.yml
+*.yml
 *.pyc
 *.db
 *.
 *.map
-*.css
-*.js
+
 *.log
 *.pdf
 _test/

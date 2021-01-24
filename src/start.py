@@ -7,6 +7,10 @@ import os
 import sys
 import site
 import logging
+import website
+from app_config import AppConfig
+import database as DB
+import create_db_dummys
 
 
 FORMAT = "[%(levelname)-5s] %(name)-20s %(message)s"
@@ -14,7 +18,7 @@ FORMAT = "[%(levelname)-5s] %(name)-20s %(message)s"
 THISDIR = os.path.dirname(__file__)
 SVC_NAME = "Invoice_Tracker"
 SVC_DISPLAY_NAME = f"_{SVC_NAME}"
-DEFAULT_CFG = os.path.abspath(os.path.join(THISDIR, 'db_config.yml'))
+DEFAULT_CFG = os.path.abspath(os.path.join(THISDIR, 'config.yml'))
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format=FORMAT)
 
@@ -39,7 +43,7 @@ def main(config_file=DEFAULT_CFG, blocking=True, argv=None):
         sys.exit(f"Config file {config_file} not found!")
     init_logger()
 
-    log.debug("starting server...")
+    log.info("starting server...")
     #os.makedirs(appconfig.tempdir, exist_ok=True)
     return server.run(blocking=blocking)
 
@@ -66,5 +70,13 @@ def init_logger():
 
 
 if __name__ == "__main__":
+    try:
+        # Try to read the First entry from the DB
+        # If that does not work -> Create Dummy Entrys !!!
+        Test = DB.Invoices.get(1)
+        print(Test.invoice_id)
+    except Exception:
+        create_db_dummys.fill_db()
+
     if True:
-        main(blocking=False)
+        main(blocking=True)

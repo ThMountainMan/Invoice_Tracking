@@ -14,7 +14,7 @@
 <body>
 
   <header>
-    <div class="container">
+    <div class="container-fluid">
       <h1 class="logo">Agencys</h1>
       <br><a href="/agency_add" class="btn btn-primary"> Create New Agency </a><br><br>
       <table class=" table">

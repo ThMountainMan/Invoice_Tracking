@@ -23,7 +23,7 @@
 <body>
   % include('base.tpl')
 
-  <div class="container">
+  <div class="container-fluid">
 
     % if customer:
     <h1 class="logo">Edit Customer "{{customer.name}}"</h1>

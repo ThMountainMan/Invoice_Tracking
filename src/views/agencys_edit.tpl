@@ -23,7 +23,7 @@
 <body>
   % include('base.tpl')
 
-  <div class="container">
+  <div class="container-fluid">
 
     % if agency:
     <h1 class="logo">Edit agency "{{agency.name}}"</h1>

@@ -13,7 +13,7 @@
 <body>
   % include('base.tpl')
   <header>
-    <div class="container">
+    <div class="container-fluid">
       <h1 class="logo">Customers</h1>
       <br><a href="/customer_add" class="btn btn-primary"> Create New Customer </a><br><br>
       <table class="table">

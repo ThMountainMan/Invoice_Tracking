@@ -24,7 +24,7 @@
   % include('base.tpl')
   <header>
   </header>
-  <div class="container">
+  <div class="container-fluid">
 
     % if jobtype:
     <h1 class="logo">Edit Jobtype "{{jobtype.name}}"</h1>

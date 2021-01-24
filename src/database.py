@@ -1,7 +1,7 @@
 # Helper to interact with the Database
 
 import os
-import yaml
+
 import sqlalchemy as db
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
@@ -9,25 +9,20 @@ from sqlalchemy import Column, Integer, Date, VARCHAR, FLOAT, JSON
 from sqlalchemy import ForeignKey, extract
 from sqlalchemy.ext.declarative import declared_attr
 
+from app_config import AppConfig
+
 import logging
 
 # Init the Logger
 log = logging.getLogger(__name__)
 
 
-def _ParseConfig():
-    with open("db_config.yml", "r") as ymlfile:
-        cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)
-    return cfg
-
-
 class Database:
-    def __init__(self):
-        # Parse the config File
-        self._ParseConfig()
+    def __init__(self, config):
         # Create the connection engine
+        self.config = config
         self._engine = db.create_engine(
-            self._CreateDbString(), echo=bool(int(self.config.get('debug'))))
+            self._CreateDbString(), echo=self.config.debug)
         self._session = sessionmaker(bind=self._engine)
         self._Session = self._session()
 
@@ -37,14 +32,9 @@ class Database:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def _ParseConfig(self):
-        with open("db_config.yml", "r") as ymlfile:
-            cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)
-        self.config = cfg
-
     def _CreateDbString(self):
         # In case we have a local DB File
-        if int(self.config.get('use_local')):
+        if int(self.config.local):
             cur_path = os.path.dirname(os.path.abspath(__file__))
             path = os.path.join(cur_path, 'db')
             if not os.path.exists(path):
@@ -53,21 +43,14 @@ class Database:
 
         # In Case we want to connect to a remote SQL DB
         else:
-            self.db_config = self.config["database"]
-            self.user = self.db_config.get('user')
-            self.pw = self.db_config.get('password')
-            self.host = self.db_config.get('address')
-            self.port = self.db_config.get('port')
-            self.database = self.db_config.get('database')
+            return f"mysql+pymysql://{self.config.db_user}:{self.config.db_pw}@{self.config.db_host}:{self.config.db_port}/{self.config.db_name}"
 
-            return f"mysql+pymysql://{self.user}:{self.pw}@{self.host}:{self.port}/{self.database}"
-
-    @property
+    @ property
     def connection(self):
         self._conn = self._engine.connect()
         return self._conn
 
-    @property
+    @ property
     def engine(self):
         return self._engine
 
@@ -88,7 +71,7 @@ class Database:
 # Define the Base for the Database assignement
 Base = declarative_base()
 # Define a DB session
-dbObject = Database()
+dbObject = Database(AppConfig)
 session = dbObject.ReturnSession()
 
 # =========================================
@@ -108,7 +91,7 @@ class BaseMixin(object):
     functionality
     """
 
-    @declared_attr
+    @ declared_attr
     def __tablename__(cls):
         return cls.__name__.lower()
 
@@ -116,7 +99,7 @@ class BaseMixin(object):
 
     id = Column(Integer, primary_key=True)
 
-    @classmethod
+    @ classmethod
     def create(cls, obj):
         # Create a new Entry in the DB
         # check if the entry is already existant
@@ -129,14 +112,14 @@ class BaseMixin(object):
             log.error(f"Not able to creare object in '{__tablename__}' with the Error:\n{e}")
         return None
 
-    @classmethod
+    @ classmethod
     def delete(cls, id):
         # Delete Entry based on ID
         obj = session.query(cls).filter(cls.id == id).first()
         session.delete(obj)
         session.commit()
 
-    @classmethod
+    @ classmethod
     def get(cls, id=None, name=None):
         # Return a specific result
         if name:
@@ -148,23 +131,23 @@ class BaseMixin(object):
         # TODO: Enable more Filters for this querry !!!!
         return result
 
-    @classmethod
+    @ classmethod
     def get_all(cls):
         # Return all entrys in the DB
         return session.query(cls).all()
 
-    @classmethod
+    @ classmethod
     def count(cls):
         # Return the total count of all entrys
         return session.query(cls).count()
 
-    @classmethod
+    @ classmethod
     def check_link(cls):
         # TODO: Impement a method that checks if a foreign key is uesd in an
         # Invoice or not, so that we can delete an object safely
         pass
 
-    @classmethod
+    @ classmethod
     def update(cls, id, dUpdate):
         # Update a DB entry
         # REVIEW: Does this actually work as expected?
@@ -241,14 +224,14 @@ class Expenses(BaseMixin, Base):
     cost = Column(FLOAT)
     comment = Column(VARCHAR)
 
-    @classmethod
+    @ classmethod
     def get_latest_id(cls):
         obj = session.query(cls).order_by(cls.id.desc()).first()
         if not obj:
             return 1
         return obj.id + 1
 
-    @classmethod
+    @ classmethod
     def get_all(cls, year=None):
         if year:
             # Return DB entrys filterd by year
@@ -282,14 +265,14 @@ class Invoices(BaseMixin, Base):
     agency = relationship("Agencys", foreign_keys=[agency_id])
     personal = relationship("PersonalDetails", foreign_keys=[personal_id])
 
-    @classmethod
+    @ classmethod
     def get_latest_id(cls):
         obj = session.query(cls).order_by(cls.id.desc()).first()
         if not obj:
             return 1
         return obj.id + 1
 
-    @classmethod
+    @ classmethod
     def get_all(cls, year=None):
         if year:
             # Return DB entrys filterd by year

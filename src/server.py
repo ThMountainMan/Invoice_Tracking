@@ -4,11 +4,10 @@ a threaded (non blocking) execution
 """
 
 from gevent import monkey
-from database import _ParseConfig
 import logging
 import threading
 import bottle
-import website
+from app_config import AppConfig
 
 # Apply GEVENT patches to bottle server to enable asynchronous functionality
 monkey.patch_all()
@@ -42,14 +41,11 @@ def _run(**kwargs):
 
 
 def run(blocking=True):
-    cfg = _ParseConfig()
-    cfg_webserver = cfg['webserver']
-    port = cfg_webserver.get('port')
-    server = bottle.GeventServer(host=cfg_webserver.get('host'), port=cfg_webserver.get('port'))
+    server = bottle.GeventServer(host=AppConfig.web_host, port=AppConfig.web_port)
     kwargs = {
         "server": server,
-        "quiet": not cfg.get('debug'),
-        "debug": cfg.get('debug'),
+        "quiet": AppConfig.debug,
+        "debug": AppConfig.debug,
     }
     if blocking:
         log.info("start blocking http server")

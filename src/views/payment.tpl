@@ -12,7 +12,7 @@
 <body>
   % include('base.tpl')
 
-  <div class="container">
+  <div class="container-fluid">
     <h1 class="logo">Payment Details Data</h1>
     <br><a href="/payment_add" class="btn btn-primary"> Add New Payment Method </a><br><br>
     <table class=" table">

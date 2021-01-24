@@ -1,12 +1,26 @@
 import pdfkit
 import os
+from app_config import AppConfig
 
-if not os.path.exists("./invoices"):
-    os.mkdir("./invoices")
+print(AppConfig.path)
 
 
-def export_to_pdf(source, id):
+def export_to_pdf(source, InvoiceData):
     config = pdfkit.configuration(
-        wkhtmltopdf=r"F:\Development\Projects\Invoice_Tracking\recources\wkhtmltopdf\bin\wkhtmltopdf.exe")
+        wkhtmltopdf=AppConfig.pfd_creator)
 
-    pdfkit.from_url(source, f"./invoices/Invoice_{id}.pdf", configuration=config)
+    ID = InvoiceData.invoice_id
+    YEAR = InvoiceData.date.year
+    NAME = InvoiceData.personal.name
+
+    FilePath = os.path.join(AppConfig.path, str(YEAR))
+    FileName = f"Invoice_{NAME.replace(' ', '_')}__{ID}.pdf"
+
+    if not os.path.exists(FilePath):
+        os.mkdir(FilePath)
+
+    FullPath = os.path.join(FilePath, FileName)
+
+    print(FullPath)
+
+    pdfkit.from_url(source, FullPath, configuration=config)

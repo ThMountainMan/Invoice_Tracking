@@ -24,7 +24,7 @@
 <body>
   % include('base.tpl')
   <header>
-    <div class="container">
+    <div class="container-fluid">
 
       % if data:
 

@@ -81,7 +81,7 @@
               <br>
               <div class="row">
                 <div class="col-xs-6">
-                  <h2>Rechnung - Rosie Thorpe<br>
+                  <h2>Rechnung - {{invoice.personal.name}}<br>
                     <span class="small"># {{invoice.invoice_id}}</span>
                   </h2>
                 </div>
@@ -132,7 +132,7 @@
                     % for item in range(1,2):
                     <tr>
                       <td>{{item}}</td>
-                      <td><strong>Template Design</strong><br>{{invoice.invoice_data['comment']}}</td>
+                      <td><strong>Description</strong><br>{{invoice.invoice_data['comment']}}</td>
                       <td class="text-center">{{invoice.invoice_data['ammount']}}</td>
                       <td class="text-center">{{invoice.invoice_data['price']}} €</td>
                       <td class="text-right">{{invoice_subtotal}} €</td>

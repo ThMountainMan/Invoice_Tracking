@@ -23,7 +23,7 @@
 <body>
   % include('base.tpl')
 
-  <div class="container">
+  <div class="container-fluid">
 
     <h1 class="logo">Edit / Add Invoices</h1>
 
@@ -123,6 +123,10 @@
   </div>
 
 </body>
+
+
+
+
 
 
 
