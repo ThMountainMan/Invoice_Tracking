@@ -36,10 +36,10 @@ class appconfig(object):
         self.path = self.cfg['invoices'].get('basepath')
 
     def _parse(self):
-        with open("config.yml", "r") as ymlfile:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "config.yml", "r") as ymlfile:
             # cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)
-            cfg = yaml.full_load(ymlfile)
-        self.cfg = cfg
+            cfg=yaml.full_load(ymlfile)
+        self.cfg=cfg
 
     def _createfolders(self):
         # Create all Folders we need for the tool
@@ -49,7 +49,7 @@ class appconfig(object):
         # Create a blank config file
         log.info("Creating default config file ...")
 
-        config_file = {"debug": False, "use_local": True, 'wkhtmltopdf_path': "Please definde path for wkhtmltopdf.exe",
+        config_file={"debug": False, "use_local": True, 'wkhtmltopdf_path': "Please definde path for wkhtmltopdf.exe",
                        'database': {'address': '192.168.178.71', 'port': 3307, 'db_path': "",
                                     'database': "db_invoices", 'user': 'invoice_tool', 'password': ""},
                        'webserver': {'port': 8090, 'host': "0.0.0.0"},
@@ -60,4 +60,4 @@ class appconfig(object):
 
 
 # Call the Configuration class
-AppConfig = appconfig()
+AppConfig=appconfig()
