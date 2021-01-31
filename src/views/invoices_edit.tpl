@@ -80,7 +80,7 @@
       <div class="form-group required">
         <b><label class='control-label'>Mwst.:</label></b>
         <div class="input-group-prepend">
-          <input type="number" id="mwst" class="form-control" name="mwst" min="0" max="20" value="16" required>
+          <input type="number" id="mwst" class="form-control" name="mwst" min="0" max="20" value="19" required>
           <span class="input-group-text" id="basic-addon1">%</span>
         </div>
       </div>
@@ -94,28 +94,33 @@
           Description: I Have done this and that for the company
         </small>
         <br>
-        <div class="row">
-          <div class="col-6">
-            <b><label class='control-label'>Item Count:</label></b>
-            <input type="number" class="form-control w-100" name=ammount1 id="ammount1" required>
-          </div>
-          <div class="col-6">
-            <b><label class='control-label'>Price:</label></b>
-            <div class="input-group-prepend">
-              <input type="number" class="form-control w-100" name=price1 id=="price1" required>
-              <span class="input-group-text" id="basic-addon1">€</span>
+        <div id="itemlist1" class="itemlist">
+          <div class="row">
+            <div class="col-6">
+              <b><label class='control-label'>Item Count:</label></b>
+              <input type="number" class="form-control w-100" name="ammount" onkeypress="return event.charCode >= 48" min="1" required>
+            </div>
+            <div class="col-6">
+              <b><label class='control-label'>Price:</label></b>
+              <div class="input-group-prepend">
+                <input type="number" class="form-control w-100" name="price" required>
+                <span class="input-group-text" id="basic-addon1">€</span>
+              </div>
+            </div>
+
+            <div class="col-12">
+              <b><label class='control-label'>Description:</label></b>
+              <textarea class="form-control w-100" name="comment" rows=" 3" required></textarea>
             </div>
           </div>
-
-          <div class="col-12">
-            <b><label class='control-label'>Description:</label></b>
-            <textarea class="form-control w-100" id="comment1" name=comment1 rows="3" required></textarea>
-          </div>
+          <br>
         </div>
+        <div id="moreitemlist" class="moreitemlist"></div>
       </div>
 
       <div id="newRow">
-        <button disabled id="addRow" type="button" class="btn btn-info">Additional Item</button>
+        <button id="additem" type="button" class="btn btn-info">Additional Item</button>
+        <button id="removeitem" type="button" class="btn btn-danger">Remove</button>
       </div><br>
 
       <input type="submit" class="btn btn-primary" value="Submit">
@@ -125,48 +130,44 @@
 </body>
 
 
-
-
-
-
-
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js"></script>
 
 <script>
-  // add row
-  $("#addRow").click(function() {
-    var html = '';
+  $(document).ready(function() {
+    $('#additem').click(function() {
+      var num = $('.itemlist').length;
+      var newNum = new Number(num + 1);
 
-    html += '<div id="inputFormRow">' +
-      '<div class="form-group required invoice" id="otherFieldGroupDiv" name=Test123>' +
-      '<b><labe class='
-    control - label ' for="agency">Invoice Details:</label></b>' +
-      '<div class="row">' +
-      '<div class="col-6">' +
-      '<labe class='
-    control - label ' for="otherField1">Amount:</label>' +
-      '<input type="text" class="form-control w-100" name=amount[] id="otherField1">' +
-      '</div>' +
-      '<div class="col-6">' +
-      '<labe class='
-    control - label ' for="otherField2">Price:</label>' +
-      '<input type="text" class="form-control w-100" name=price[]="otherField2">' +
-      '</div>' +
-      '<div class="col-6">' +
-      '<labe class='
-    control - label ' for="comments">Description:</label>' +
-      '<textarea class="form-control w-100" id="comments" name=comment[] rows="1"></textarea>' +
-      '</div>' +
-      '<button id="removeRow" type="button" class="btn btn-danger">Remove</button>' +
-      '</div>' +
-      '</div>' +
-      '</div>'
+      var newSection = $('#itemlist' + num).clone().attr('id', 'itemlist' + newNum);
 
-    $('#newRow').append(html);
-  });
+      // Change the Names of the input fields
+      //newSection.children(':first').children(':first').attr('id', 'name' + newNum).attr('name', 'name' + newNum);
+      //newSection.children(':nth-child(2)').children(':first').attr('id', 'nameTwo' + newNum).attr('name', 'nameTwo' + newNum);
+      //newSection.children(':nth-child(3)').children(':first').attr('id', 'nameTwo' + newNum).attr('name', 'nameTwo' + newNum);
 
-  // remove row
-  $(document).on('click', '#removeRow', function() {
-    $(this).closest('#inputFormRow').remove();
+      // Add the clone to the section
+      $('.itemlist').last().append(newSection)
+      // Enable the Disable button
+      $('#removeitem').attr('disabled', '');
+
+      // If there are more then X items, do not allow the creation of more
+      if (newNum == 5)
+        $('#additem').attr('disabled', 'disabled');
+    });
+
+    $('#removeitem').click(function() {
+      var num = $('.itemlist').length; // how many "duplicatable" input fields we currently have
+      $('#itemlist' + num).remove(); // remove the last element
+
+      // enable the "add" button
+      $('#additem').attr('disabled', '');
+
+      // if only one element remains, disable the "remove" button
+      if (num - 1 == 1)
+        $('#removeitem').attr('disabled', 'disabled');
+    });
+
+    $('#removeitem').attr('disabled', 'disabled');
   });
 </script>
 

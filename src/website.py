@@ -3,19 +3,24 @@ from dateutil import parser
 from app_config import AppConfig
 import database as DB
 
+import os
 import bottle
 from bottle import route, static_file
 from bottle import request, redirect, template
 
 import export
+import postprocessing as pp
 
 import logging
-
 log = logging.getLogger(__name__)
 
 # =========================================
 # Invoice Related Functions
 # =========================================
+
+# Add the Template Path to bottle
+# This is done to run the Scrip on Linux as well
+bottle.TEMPLATE_PATH.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'views'))
 
 
 @route("/invoices/<year>")
@@ -37,7 +42,7 @@ def invoices(year=None):
     return template("invoices.tpl", overview=dOverview, input=Data, jobtypes=jobtypes)
 
 
-@ route("/invoice_show/<id>")
+@ route("/invoice_show/<id>", method=["POST", 'GET'])
 def invoice_get(id=None):
 
     Data = DB.Invoices.get(id)
@@ -45,26 +50,23 @@ def invoice_get(id=None):
 
     # Data manipulation
     # TODO:  process the data so that we can use it!!
-    item_comment = Data.invoice_data['comment']
-    item_price = round(float(Data.invoice_data['price']), 2)
-    item_count = round(float(Data.invoice_data['ammount']), 2)
-    invoice_subtotal = round(item_price * item_count, 2)
 
     invoice_mwst = round(Data.invoice_ammount * (Data.invoice_mwst / 100), 2)
-    invoice_total = round(Data.invoice_ammount + invoice_mwst, 2)
 
-    return template("Invoice/Invoice_V1.tpl",
-                    invoice=Data,
-                    invoice_subtotal=invoice_subtotal,
-                    invoice_mwst=invoice_mwst,
-                    invoice_total=invoice_total)
+    html_data = template("Invoice/Invoice_V1.tpl",
+                         invoice=Data,
+                         items=Data.invoice_data,
+                         total=Data.invoice_data['TOTAL'],
+                         invoice_mwst=invoice_mwst)
+    if request.method == "POST":
+        File, Path = export.export_to_pdf(html_data, Data)
 
-
-@ route("/invoice_print/<id>")
-def invoice_print(id=None):
-    Data = DB.Invoices.get(id)
-    export.export_to_pdf(f"http://localhost:8080/invoice_show/{id}", Data)
-    redirect("/invoices")
+        print(File)
+        print(Path)
+        return static_file(File, root=Path, download=File)
+        # redirect("/invoices")
+    else:
+        return html_data
 
 
 @ route("/invoice_add")
@@ -78,20 +80,17 @@ def invoice_add(id=None):
         Data = request.forms
 
         # Data Postprocessing before submitting to DB
-        # for i in range(1,)
-        item_comment = Data.get('comment1')
-        item_price = round(float(Data.get('price1')), 2)
-        item_count = float(Data.get('ammount1'))
-        invoice_subtotal = round(item_price * item_count, 2)
+        invoice_data = pp.pp_invoicedata(request.POST.getall('ammount'),
+                                         request.POST.getall('price'),
+                                         request.POST.getall('comment'))
 
-        invoice_mwst = round(invoice_subtotal * (float(Data.get('mwst')) / 100), 2)
-        invoice_total = round(invoice_subtotal + invoice_mwst, 2)
+        invoice_total = round(invoice_data['TOTAL'] * (float(Data.get('mwst')) / 100), 2)
 
         print(type((Data.get('customer_id'))))
         # Prepare the Data for DB input
         new = DB.Invoices(invoice_id=Data.get('id'),
                           date=parser.parse(Data.get('date')),
-                          description=Data.get('comment1'),
+                          description=None,
                           invoice_ammount=invoice_total,
                           invoice_mwst=Data.get('mwst'),
                           paydate=None,
@@ -101,11 +100,11 @@ def invoice_add(id=None):
                           agency_id=Data.get('agency_id'),
                           personal_id=Data.get('personal_id'),
                           # Get the Invoice item data
-                          invoice_data={'comment': Data.get('comment1'),
-                                        'ammount': Data.get('ammount1'),
-                                        'price': Data.get('price1')})
+                          invoice_data=invoice_data)
 
-        DB.Invoices.create(new)
+        newID = DB.Invoices.create(new)
+        #redirect(f"/invoice_show/{newID}", code=307)
+        # redirect(f"/invoice_show/{newID}")
         redirect("/invoices")
     else:
         customers = DB.Customers.get_all()
@@ -532,11 +531,12 @@ def payment_delete(id=None):
 # =========================================
 
 
-@ route('/static/<filename>')
-def server_static(filename):
-    return static_file(filename, root=r".\\static")
+@ route('/static/<path>/<filename>')
+def server_static(path, filename):
+    return static_file(filename, root=os.path.join(os.path.dirname(__file__), path, filename))
 
 
+"""
 @ route('/static/js/<filename>')
 def server_static_js(filename):
     return static_file(filename, root=r".\\static\\js")
@@ -545,7 +545,7 @@ def server_static_js(filename):
 @ route('/static/css/<filename>')
 def server_static_css(filename):
     return static_file(filename, root=r".\\static\\css")
-
+"""
 
 if __name__ == '__main__':
     bottle.debug(False)

@@ -34,12 +34,15 @@ class Database:
 
     def _CreateDbString(self):
         # In case we have a local DB File
-        if int(self.config.local):
-            cur_path = os.path.dirname(os.path.abspath(__file__))
-            path = os.path.join(cur_path, 'db')
+        if self.config.local:
+            path = self.config.db_path
+            if not path:
+                cur_path = os.path.dirname(os.path.abspath(__file__))
+                path = os.path.join(cur_path, 'db')
+
             if not os.path.exists(path):
                 os.makedirs(path)
-            return f'sqlite:///{path}\\invoice_database.db'
+            return f'sqlite:///{path}//invoice_database.db'
 
         # In Case we want to connect to a remote SQL DB
         else:

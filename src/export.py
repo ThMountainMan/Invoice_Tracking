@@ -1,13 +1,20 @@
+"""
+Export the Data to several ouputs
+"""
+
 import pdfkit
 import os
 from app_config import AppConfig
-
-print(AppConfig.path)
+import logging
+log = logging.getLogger(__name__)
 
 
 def export_to_pdf(source, InvoiceData):
-    config = pdfkit.configuration(
-        wkhtmltopdf=AppConfig.pfd_creator)
+
+    # check if we are on windows or Linux
+    if os.name == "nt":
+        config = pdfkit.configuration(
+            wkhtmltopdf=AppConfig.pfd_creator)
 
     ID = InvoiceData.invoice_id
     YEAR = InvoiceData.date.year
@@ -16,11 +23,16 @@ def export_to_pdf(source, InvoiceData):
     FilePath = os.path.join(AppConfig.path, str(YEAR))
     FileName = f"Invoice_{NAME.replace(' ', '_')}__{ID}.pdf"
 
+    log.info(f"Creating Invoice : {FileName} in : {FilePath} ...")
+
     if not os.path.exists(FilePath):
-        os.mkdir(FilePath)
+        os.makedirs(FilePath)
 
     FullPath = os.path.join(FilePath, FileName)
 
-    print(FullPath)
+    if os.name == "nt":
+        pdfkit.from_string(source, FullPath, configuration=config)
+    else:
+        pdfkit.from_string(source, FullPath)
 
-    pdfkit.from_url(source, FullPath, configuration=config)
+    return [FileName, FilePath]

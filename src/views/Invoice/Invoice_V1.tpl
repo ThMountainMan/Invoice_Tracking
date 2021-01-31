@@ -74,9 +74,11 @@
           <div class="grid-body">
             <div class="invoice-title">
               <div class="row">
+                <!-- Insert Logo here
                 <div class="col-xs-12">
                   <img src="http://vergo-kertas.herokuapp.com/assets/img/logo.png" alt="" height="35">
                 </div>
+                -->
               </div>
               <br>
               <div class="row">
@@ -125,17 +127,17 @@
                       <td class="text-center"><strong>BESCHREIBUNG</strong></td>
                       <td class="text-center"><strong>ANZAHL / STUNDEN</strong></td>
                       <td class="text-center"><strong>PREIS / HONORAR</strong></td>
-                      <td class="text-right"><strong>SUM</strong></td>
+                      <td class="text-right"><strong>Zwischensumme</strong></td>
                     </tr>
                   </thead>
                   <tbody>
-                    % for item in range(1,2):
+                    % for item in items['ITEMS']:
                     <tr>
-                      <td>{{item}}</td>
-                      <td><strong>Description</strong><br>{{invoice.invoice_data['comment']}}</td>
-                      <td class="text-center">{{invoice.invoice_data['ammount']}}</td>
-                      <td class="text-center">{{invoice.invoice_data['price']}} €</td>
-                      <td class="text-right">{{invoice_subtotal}} €</td>
+                      <td><strong>{{item}}</strong></td>
+                      <td>{{items['ITEMS'][item]['comment']}}</td>
+                      <td class="text-center">{{items['ITEMS'][item]['count']}}</td>
+                      <td class="text-center">{{"{:.2f}".format(items['ITEMS'][item]['price'])}} €</td>
+                      <td class="text-right">{{"{:.2f}".format(items['ITEMS'][item]['subtotal'])}} €</td>
                     </tr>
                     % end
                   </tbody>
@@ -146,7 +148,7 @@
                     <tr>
                       <td colspan="3"></td>
                       <td class="text-right"><strong>Summe Netto</strong></td>
-                      <td class="text-right"><strong>{{invoice_subtotal}} €</strong></td>
+                      <td class="text-right"><strong>{{"{:.2f}".format(total)}} €</strong></td>
                     </tr>
                     <tr>
                       <td colspan="3"></td>
@@ -156,7 +158,7 @@
                     <tr>
                       <td colspan="3"></td>
                       <td class="text-right"><strong>Rechnugsbetrag</strong></td>
-                      <td class="text-right"><strong>{{invoice_total}} €</strong></td>
+                      <td class="text-right"><strong>{{"{:.2f}".format(total + invoice_mwst)}} €</strong></td>
                     </tr>
                   </tbody>
                 </table>

@@ -6,4 +6,7 @@
 
 *.log
 *.pdf
+
 _test/
+scripts/
+documentation/

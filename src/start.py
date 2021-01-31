@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 """
 Startup script for the Invoice Tracker Webservice
 """
@@ -9,8 +11,8 @@ import site
 import logging
 import website
 from app_config import AppConfig
-import database as DB
-import create_db_dummys
+
+import check_db
 
 
 FORMAT = "[%(levelname)-5s] %(name)-20s %(message)s"
@@ -32,19 +34,18 @@ site.addsitedir(os.path.abspath(
 
 def main(config_file=DEFAULT_CFG, blocking=True, argv=None):
     if os.path.exists(config_file):
-        log.info("read config file: %s", config_file)
+        log.info("Read config file: %s", config_file)
         # read_config(config_file)
-    # else:
-        #log.info("create config file: %s", config_file)
-        # TODO: Create function to write default config file
-        # write_config(config_file)
-        #sys.exit(f"Config file {config_file} created!")
     else:
-        sys.exit(f"Config file {config_file} not found!")
+        log.info("Create default config file: %s", config_file)
+        AppConfig._createdefault()
+        sys.exit(f"Config file {config_file} created!")
+
+    # Init the Logger Functionality
     init_logger()
 
     log.info("starting server...")
-    #os.makedirs(appconfig.tempdir, exist_ok=True)
+
     return server.run(blocking=blocking)
 
 
@@ -70,13 +71,11 @@ def init_logger():
 
 
 if __name__ == "__main__":
-    try:
-        # Try to read the First entry from the DB
-        # If that does not work -> Create Dummy Entrys !!!
-        Test = DB.Invoices.get(1)
-        print(Test.invoice_id)
-    except Exception:
-        create_db_dummys.fill_db()
+    # Validate the DB connection
+    if not check_db.DB_Validation():
+        # If no data is available create dummy data
+        check_db.DB_CreateDummys()
 
+    # Start the Server
     if True:
         main(blocking=True)
