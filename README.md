@@ -14,6 +14,7 @@ usefull that is need in my day to day life. Currently I keep track of my Invoice
 
 ## Current Functionality :
 
+
 ### Requirements
 
 Python 3.9
@@ -27,12 +28,18 @@ https://github.com/wkhtmltopdf/wkhtmltopdf
 [Requirements.txt](recources/requirements.txt)
 
 ### Ability of the Database / Weberver
+=======
+### Create a Python Script with basic functionality
+
 - [x] Create / Edit Invoice
 - [x] Create / Edit Customer
 - [x] Create / Edit Agency
 - [x] Create / Edit Job Type
+
 - [x] Create / Edit Personal Data
 - [x] Create / Edit Payment Data
+=======
+
 - [ ] Get an overview of the Monthly / Yearly Income
 - [x] Track unpaied invoices
 - [ ] Generate PDF Invoices
@@ -55,6 +62,7 @@ Interaction with the Tool is based on a Python Bottle Webserver.
 
 ### Create Invoices
 
+
 In order to visualize the Invoice Data, a HTML template has been added.
 
 - [x] Create a Invoice Template in HTML
@@ -71,3 +79,4 @@ Possible Options :
 ## How to Use
 
 This section needs to be defined !
+=======
