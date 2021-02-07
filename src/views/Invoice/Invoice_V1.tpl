@@ -101,6 +101,9 @@
               <div class="col-xs-6">
                 <address>
                   <strong>{{invoice.customer.name}}</strong><br><br>
+                  % if invoice.customer.contact:
+                  {{invoice.customer.contact}}<br>
+                  %end
                   {{invoice.customer.street}}<br>
                   {{invoice.customer.postcode}} {{invoice.customer.city}}<br>
                 </address>
@@ -134,7 +137,7 @@
                     % for item in items['ITEMS']:
                     <tr>
                       <td><strong>{{item}}</strong></td>
-                      <td>{{items['ITEMS'][item]['comment']}}</td>
+                      <td>{{items['ITEMS'][item]['comment'].encode('iso-8859-1')}}</td>
                       <td class="text-center">{{items['ITEMS'][item]['count']}}</td>
                       <td class="text-center">{{"{:.2f}".format(items['ITEMS'][item]['price'])}} €</td>
                       <td class="text-right">{{"{:.2f}".format(items['ITEMS'][item]['subtotal'])}} €</td>
@@ -150,15 +153,21 @@
                       <td class="text-right"><strong>Summe Netto</strong></td>
                       <td class="text-right"><strong>{{"{:.2f}".format(total)}} €</strong></td>
                     </tr>
+                    % if invoice_mwst:
                     <tr>
                       <td colspan="3"></td>
                       <td class="text-right"><strong>Mwst. {{invoice.invoice_mwst}} %</strong></td>
                       <td class="text-right"><strong>{{invoice_mwst}} €</strong></td>
                     </tr>
+                    %end
                     <tr>
                       <td colspan="3"></td>
                       <td class="text-right"><strong>Rechnugsbetrag</strong></td>
+                      % if invoice_mwst:
                       <td class="text-right"><strong>{{"{:.2f}".format(total + invoice_mwst)}} €</strong></td>
+                      %else:
+                      <td class="text-right"><strong>{{"{:.2f}".format(total)}} €</strong></td>
+                      %end
                     </tr>
                   </tbody>
                 </table>

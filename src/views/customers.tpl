@@ -11,6 +11,7 @@
 </head>
 
 <body>
+
   % include('base.tpl')
   <header>
     <div class="container-fluid">

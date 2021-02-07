@@ -32,7 +32,7 @@
 
       <div class="form-group required">
         <b><label class='control-label'>Invoice ID:</label></b>
-        <input readonly type="text" id="id" class="form-control" name="id" value={{id}} required>
+        <input type="text" id="id" class="form-control" name="id" value={{id}} required>
       </div>
 
       <div class="form-group required">

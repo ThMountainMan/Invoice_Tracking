@@ -7,6 +7,10 @@
 *.log
 *.pdf
 
+.vscode/
+
 _test/
 scripts/
 documentation/
+recources/wkhtmltopdf/
+Temp/

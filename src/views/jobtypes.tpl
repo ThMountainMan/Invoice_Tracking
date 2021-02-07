@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
 
 <head>
-  <meta charset="utf-8">
-  <title>CCC Tracker</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <html lang="de">
+  <title>Invoice Tracker - Jobtype</title>
   <style>
 
   </style>

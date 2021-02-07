@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 """
 Startup script for the Invoice Tracker Webservice
@@ -13,7 +14,6 @@ import website
 from app_config import AppConfig
 
 import check_db
-
 
 FORMAT = "[%(levelname)-5s] %(name)-20s %(message)s"
 
@@ -50,7 +50,8 @@ def main(config_file=DEFAULT_CFG, blocking=True, argv=None):
 
 
 def init_logger():
-    log.info("init logging: level=%s file=%s", logging.INFO, "server_logging.log")
+    log.info("init logging: level=%s file=%s",
+             logging.INFO, "server_logging.log")
 
     level = getattr(logging, 'INFO')
     log.setLevel(level)

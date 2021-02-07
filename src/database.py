@@ -11,6 +11,8 @@ from sqlalchemy.ext.declarative import declared_attr
 
 from app_config import AppConfig
 
+import postprocessing as pp
+
 import logging
 
 # Init the Logger
@@ -42,11 +44,11 @@ class Database:
 
             if not os.path.exists(path):
                 os.makedirs(path)
-            return f'sqlite:///{path}//invoice_database.db'
+            return f'sqlite:///{path}//invoice_database.db?charset=utf8'
 
         # In Case we want to connect to a remote SQL DB
         else:
-            return f"mysql+pymysql://{self.config.db_user}:{self.config.db_pw}@{self.config.db_host}:{self.config.db_port}/{self.config.db_name}"
+            return f"mysql+pymysql://{self.config.db_user}:{self.config.db_pw}@{self.config.db_host}:{self.config.db_port}/{self.config.db_name}?charset=utf8"
 
     @ property
     def connection(self):
@@ -112,15 +114,24 @@ class BaseMixin(object):
             return obj.id
         except Exception as e:
             session.rollback()
-            log.error(f"Not able to creare object in '{__tablename__}' with the Error:\n{e}")
+            log.error(
+                f"Not able to create object in '{cls.__tablename__(cls)}' with the Error:\n{e}")
         return None
 
     @ classmethod
     def delete(cls, id):
         # Delete Entry based on ID
         obj = session.query(cls).filter(cls.id == id).first()
-        session.delete(obj)
-        session.commit()
+        if not cls.check_relation():
+            session.delete(obj)
+            session.commit()
+        else:
+            return False
+
+    @ classmethod
+    def check_relation(cls):
+        # Check if we have any relation with this class
+        pass
 
     @ classmethod
     def get(cls, id=None, name=None):
@@ -231,8 +242,8 @@ class Expenses(BaseMixin, Base):
     def get_latest_id(cls):
         obj = session.query(cls).order_by(cls.id.desc()).first()
         if not obj:
-            return 1
-        return obj.id + 1
+            return pp.get_new_id()
+        return pp.get_new_id(obj.expense_id)
 
     @ classmethod
     def get_all(cls, year=None):
@@ -272,8 +283,12 @@ class Invoices(BaseMixin, Base):
     def get_latest_id(cls):
         obj = session.query(cls).order_by(cls.id.desc()).first()
         if not obj:
-            return 1
-        return obj.id + 1
+            return pp.get_new_id()
+        return pp.get_new_id(obj.invoice_id)
+
+    @classmethod
+    def get_latest_invoice_id(cls):
+        obj = session.query(cls).order_by(cls.id.desc()).first()
 
     @ classmethod
     def get_all(cls, year=None):

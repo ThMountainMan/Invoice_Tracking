@@ -8,6 +8,8 @@ import logging
 import threading
 import bottle
 from app_config import AppConfig
+import os
+
 
 # Apply GEVENT patches to bottle server to enable asynchronous functionality
 monkey.patch_all()
@@ -41,7 +43,8 @@ def _run(**kwargs):
 
 
 def run(blocking=True):
-    server = bottle.GeventServer(host=AppConfig.web_host, port=AppConfig.web_port)
+    server = bottle.GeventServer(
+        host=AppConfig.web_host, port=AppConfig.web_port)
     kwargs = {
         "server": server,
         "quiet": AppConfig.debug,

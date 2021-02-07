@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from datetime import datetime
 from dateutil import parser
 from app_config import AppConfig
@@ -10,6 +13,7 @@ from bottle import request, redirect, template
 
 import export
 import postprocessing as pp
+import process_form_data as fData
 
 import logging
 log = logging.getLogger(__name__)
@@ -20,7 +24,8 @@ log = logging.getLogger(__name__)
 
 # Add the Template Path to bottle
 # This is done to run the Scrip on Linux as well
-bottle.TEMPLATE_PATH.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'views'))
+bottle.TEMPLATE_PATH.insert(0, os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), 'views'))
 
 
 @route("/invoices/<year>")
@@ -50,14 +55,18 @@ def invoice_get(id=None):
 
     # Data manipulation
     # TODO:  process the data so that we can use it!!
-
-    invoice_mwst = round(Data.invoice_ammount * (Data.invoice_mwst / 100), 2)
+    if float(Data.invoice_mwst):
+        invoice_mwst = round(
+            Data.invoice_data['TOTAL'] * (Data.invoice_mwst / 100), 2)
+    else:
+        invoice_mwst = None
 
     html_data = template("Invoice/Invoice_V1.tpl",
                          invoice=Data,
                          items=Data.invoice_data,
                          total=Data.invoice_data['TOTAL'],
                          invoice_mwst=invoice_mwst)
+
     if request.method == "POST":
         File, Path = export.export_to_pdf(html_data, Data)
 
@@ -84,7 +93,11 @@ def invoice_add(id=None):
                                          request.POST.getall('price'),
                                          request.POST.getall('comment'))
 
-        invoice_total = round(invoice_data['TOTAL'] * (float(Data.get('mwst')) / 100), 2)
+        if float(Data.get('mwst')):
+            invoice_total = round(
+                invoice_data['TOTAL'] * (1+(float(Data.get('mwst')) / 100)), 2)
+        else:
+            invoice_total = round(invoice_data['TOTAL'], 2)
 
         print(type((Data.get('customer_id'))))
         # Prepare the Data for DB input
@@ -103,7 +116,7 @@ def invoice_add(id=None):
                           invoice_data=invoice_data)
 
         newID = DB.Invoices.create(new)
-        #redirect(f"/invoice_show/{newID}", code=307)
+        # redirect(f"/invoice_show/{newID}", code=307)
         # redirect(f"/invoice_show/{newID}")
         redirect("/invoices")
     else:
@@ -111,7 +124,7 @@ def invoice_add(id=None):
         agencys = DB.Agencys.get_all()
         jobtypes = DB.Jobtypes.get_all()
         personas = DB.PersonalDetails.get_all()
-        newid = f"{datetime.now().year}-{DB.Invoices.get_latest_id():03}"
+        newid = DB.Invoices.get_latest_id()
         return template("invoices_edit.tpl",
                         id=newid,
                         customers=customers,
@@ -167,27 +180,20 @@ def customer_edit(id=None):
         # decide if we want to update or to create
         if id:
             # We want to update an existion entry
-            dUpdate = {'name': Data.get('name'),
-                       'contact': Data.get('contact'),
-                       'email': Data.get('email'),
-                       'phone': Data.get('phone'),
-                       'street': Data.get('street'),
-                       'postcode': Data.get('postcode'),
-                       'city': Data.get('city'),
-                       'country': Data.get('country')}
             # Send the new data to the Database
-            DB.Customers.update(id, dUpdate)
+            DB.Customers.update(id, fData.process_update_data_Customer(Data))
 
         else:
             # We want to create a new DB entry
-            new = DB.Customers(name=Data.get('name'),
-                               contact=Data.get('contact'),
-                               email=Data.get('email'),
+            new = DB.Customers(name=Data.get('name').encode('iso-8859-1'),
+                               contact=Data.get('contact').encode(
+                                   'iso-8859-1'),
+                               email=Data.get('email').encode('iso-8859-1'),
                                phone=Data.get('phone'),
-                               street=Data.get('street'),
+                               street=Data.get('street').encode('iso-8859-1'),
                                postcode=Data.get('postcode'),
-                               city=Data.get('city'),
-                               country=Data.get('country'))
+                               city=Data.get('city').encode('iso-8859-1'),
+                               country=Data.get('country').encode('iso-8859-1'))
             # Send the new data to the Database
             DB.Customers.create(new)
 
@@ -217,6 +223,10 @@ def customer_delete(id=None):
 def jobtypes():
     print("Jobtypes ...")
     Data = DB.Jobtypes.get_all()
+
+    for i in Data:
+        print(i.name)
+
     return template("jobtypes.tpl", input=Data)
 
 
@@ -232,22 +242,15 @@ def jobtype_edit(id=None):
         # Receive the HTML form data as dictionary
         Data = request.forms
         # Prepare the Data for DB input
-        # decide if we want to update or to create
+        # decide if we want to update or to creates
         if id:
             # We want to update an existion entry
-            dUpdate = {'name': Data.get('name'),
-                       'contact': Data.get('contact'),
-                       # 'email':Data.get('email'),
-                       'street': Data.get('street'),
-                       'postcode': Data.get('postcode'),
-                       'city': Data.get('city'),
-                       'country': Data.get('country')}
             # Send the new data to the Database
-            DB.Jobtypes.update(id, dUpdate)
+            DB.Jobtypes.update(id, fData.process_update_data_Jobtype(Data))
 
         else:
             # We want to create a new DB entry
-            new = DB.Jobtypes(name=Data.get('name'))
+            new = DB.Jobtypes(name=Data.get('name').encode('iso-8859-1'))
             # Send the new data to the Database
             DB.Jobtypes.create(new)
 
@@ -295,14 +298,12 @@ def agency_edit(id=None):
         # decide if we want to update or to create
         if id:
             # We want to update an existion entry
-            dUpdate = {'name': Data.get('name'),
-                       'percentage': Data.get('percentage')}
             # Send the new data to the Database
-            DB.Agencys.update(id, dUpdate)
+            DB.Agencys.update(id, fData.process_update_data_Agency(Data))
 
         else:
             # We want to create a new DB entry
-            new = DB.Agencys(name=Data.get('name'),
+            new = DB.Agencys(name=Data.get('name').encode('iso-8859-1'),
                              percentage=Data.get('percentage'))
             DB.Agencys.create(new)
 
@@ -353,20 +354,15 @@ def expense_edit(id=None):
         # decide if we want to update or to create
         if id:
             # We want to update an existion entry
-            dUpdate = {'expense_id': Data.get('id'),
-                       'date': Data.get('date'),
-                       'cost': Data.get('cost'),
-                       'comment': Data.get('comment')}
-
             # Send the new data to the Database
-            DB.Expenses.update(id, dUpdate)
+            DB.Expenses.update(id, fData.process_update_data_Expense(Data))
 
         else:
             # We want to create a new DB entry
             new = DB.Expenses(expense_id=Data.get('expense_id'),
                               date=parser.parse(Data.get('date')),
                               cost=Data.get('cost'),
-                              comment=Data.get('comment'))
+                              comment=Data.get('comment').encode('iso-8859-1'))
             # Send the new data to the Database
             DB.Expenses.create(new)
 
@@ -376,7 +372,7 @@ def expense_edit(id=None):
     # If the reueast was to edit an expense
     else:
         Data = DB.Expenses.get(id) if id else None
-        newid = f"{datetime.now().year}-{DB.Expenses.get_latest_id():03}"
+        newid = DB.Expenses.get_latest_id()
         # Return the template with the DB data
         return template("expenses_edit.tpl", expense=Data, new_id=newid)
 
@@ -415,28 +411,22 @@ def personal_edit(id=None):
         # decide if we want to update or to create
         if id:
             # We want to update an existion entry
-            dUpdate = {'label': Data.get('label'),
-                       'name_company': Data.get('name_company'),
-                       'name': Data.get('name'),
-                       'street': Data.get('street'),
-                       'postcode': Data.get('postcode'),
-                       'city': Data.get('city'),
-                       'mail': Data.get('mail'),
-                       'phone': Data.get('phone'),
-                       'payment_id': Data.get('payment_details'),
-                       'taxnumber': Data.get('taxnumber')
-                       }
             # Send the new data to the Database
-            DB.PersonalDetails.update(id, dUpdate)
+            DB.PersonalDetails.update(
+                id, fData.process_update_data_PersonalData(Data))
 
         else:
             # We want to create a new DB entry
-            new = DB.PersonalDetails(label=Data.get('label'),
-                                     name_company=Data.get('company_name'),
-                                     name=Data.get('name'),
-                                     street=Data.get('street'),
+            new = DB.PersonalDetails(label=Data.get('label').encode('iso-8859-1'),
+                                     name_company=Data.get(
+                                         'company_name').encode('iso-8859-1'),
+                                     name=Data.get('name').encode(
+                                         'iso-8859-1'),
+                                     street=Data.get('street').encode(
+                                         'iso-8859-1'),
                                      postcode=Data.get('postcode'),
-                                     city=Data.get('city'),
+                                     city=Data.get('city').encode(
+                                         'iso-8859-1'),
                                      mail=Data.get('mail'),
                                      phone=Data.get('phone'),
                                      payment_id=Data.get('payment_details'),
@@ -490,20 +480,15 @@ def payment_edit(id=None):
         # decide if we want to update or to create
         if id:
             # We want to update an existion entry
-            dUpdate = {'label': Data.get('label'),
-                       'name': Data.get('name'),
-                       'bank': Data.get('bank'),
-                       'IBAN': Data.get('IBAN'),
-                       'BIC': Data.get('BIC'),
-                       }
             # Send the new data to the Database
-            DB.PaymentDetails.update(id, dUpdate)
+            DB.PaymentDetails.update(
+                id, fData.process_update_data_PaymentDetails(Data))
 
         else:
             # We want to create a new DB entry
-            new = DB.PaymentDetails(label=Data.get('label'),
-                                    name=Data.get('name'),
-                                    bank=Data.get('bank'),
+            new = DB.PaymentDetails(label=Data.get('label').encode('iso-8859-1'),
+                                    name=Data.get('name').encode('iso-8859-1'),
+                                    bank=Data.get('bank').encode('iso-8859-1'),
                                     IBAN=Data.get('IBAN'),
                                     BIC=Data.get('BIC'),
                                     )
@@ -533,21 +518,9 @@ def payment_delete(id=None):
 
 @ route('/static/<path>/<filename>')
 def server_static(path, filename):
-    return static_file(filename, root=os.path.join(os.path.dirname(__file__), path, filename))
+    return static_file(filename, root=os.path.join(os.path.dirname(__file__), 'static', path))
 
-
-"""
-@ route('/static/js/<filename>')
-def server_static_js(filename):
-    return static_file(filename, root=r".\\static\\js")
-
-
-@ route('/static/css/<filename>')
-def server_static_css(filename):
-    return static_file(filename, root=r".\\static\\css")
-"""
 
 if __name__ == '__main__':
     bottle.debug(False)
-
     bottle.run(host=AppConfig.web_host, port=AppConfig.web_port)

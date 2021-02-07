@@ -28,7 +28,7 @@
 
     % if jobtype:
     <h1 class="logo">Edit Jobtype "{{jobtype.name}}"</h1>
-    <form class="p-3" method="post" action="/jobtype_edit/{{jobtype.id}}">
+    <form class="p-3" method="post" action="/jobtype_edit/{{jobtype.id}}" accept-charset="utf-8">
 
       <div class="form-group required">
         <b><label class='control-label'>Jobtype:</label></b>
@@ -40,7 +40,7 @@
     % else:
 
     <h1 class="logo">Add New Jobtype</h1>
-    <form class="p-3" method="post" action="/jobtype_add">
+    <form class="p-3" method="post" action="/jobtype_add" accept-charset="utf-8">
 
       <div class="form-group required">
         <b><label class='control-label' for="fname">Jobtype:</label></b>
