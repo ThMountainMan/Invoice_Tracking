@@ -1,24 +1,32 @@
 # Helper to interact with the Database
 
-import yaml
-from mysql.connector import connect, Error
+import os
 
+import sqlalchemy as db
+from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, Date, VARCHAR, FLOAT, JSON
+from sqlalchemy import ForeignKey, extract
+from sqlalchemy.ext.declarative import declared_attr
 
-def _ParseConfig():
-    with open("../recources/db_config.yml", "r") as ymlfile:
-        cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)
-    return cfg
+from app_config import AppConfig
+
+import postprocessing as pp
+
+import logging
+
+# Init the Logger
+log = logging.getLogger(__name__)
 
 
 class Database:
-    def __init__(self):
-        self._ParseConfig()
-        self._conn = connect(host=self.config.get('address'),
-                             user=self.config.get('user'),
-                             password=self.config.get('password'),
-                             database=self.config.get('database'),
-                             port=self.config.get('port'))
-        self._cursor = self._conn.cursor(dictionary=True)
+    def __init__(self, config):
+        # Create the connection engine
+        self.config = config
+        self._engine = db.create_engine(
+            self._CreateDbString(), echo=self.config.debug)
+        self._session = sessionmaker(bind=self._engine)
+        self._Session = self._session()
 
     def __enter__(self):
         return self
@@ -26,358 +34,308 @@ class Database:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def _ParseConfig(self):
-        with open("../recources/db_config.yml", "r") as ymlfile:
-            cfg = yaml.load(ymlfile, Loader=yaml.BaseLoader)
-        self.config = cfg["database"]
+    def _CreateDbString(self):
+        # In case we have a local DB File
+        if self.config.local:
+            path = self.config.db_path
+            if not path:
+                cur_path = os.path.dirname(os.path.abspath(__file__))
+                path = os.path.join(cur_path, 'db')
 
-    @property
+            if not os.path.exists(path):
+                os.makedirs(path)
+            return f'sqlite:///{path}//invoice_database.db?charset=utf8'
+
+        # In Case we want to connect to a remote SQL DB
+        else:
+            return f"mysql+pymysql://{self.config.db_user}:{self.config.db_pw}@{self.config.db_host}:{self.config.db_port}/{self.config.db_name}?charset=utf8"
+
+    @ property
     def connection(self):
+        self._conn = self._engine.connect()
         return self._conn
 
-    @property
-    def cursor(self):
-        return self._cursor
+    @ property
+    def engine(self):
+        return self._engine
 
-    def commit(self):
-        self.connection.commit()
+    def ReturnSession(self):
+        return self._Session
 
     def close(self, commit=True):
-        if commit:
-            self.commit()
-        self.connection.close()
+        self._session.close()
 
     def rollback(self):
-        self.connection.rollback()
-
-    def execute(self, sql, params=None):
-        self.cursor.execute(sql, params or ())
-
-    def fetchall(self):
-        return self.cursor.fetchall()
-
-    def fetchone(self):
-        return self.cursor.fetchone()
-
-    def query(self, sql, params=None):
-        self.cursor.execute(sql, params or ())
-        return self.fetchall()
-
-    # ----------------------------------------------------------------
-    # Methods to retrieve Information from the Database
-    # ----------------------------------------------------------------
-
-    def get_invoices(self, filter=None):
-        """ Get all available invoices - filter is optional """
-        if filter:
-            sql = f'SELECT * FROM invoices WHERE id = {filter}'
-        else:
-            sql = 'SELECT * FROM invoices'
-
-        return self.query(sql, params=None)
-
-    def get_customers(self, filter=None):
-        """ Get all available customers - filter is optional """
-        if filter:
-            sql = f'SELECT * FROM customers WHERE id = {filter}'
-        else:
-            sql = 'SELECT * FROM customers'
-
-        return self.query(sql, params=None)
-
-    def get_agencys(self, filter=None):
-        """ Get all available agencys - filter is optional """
-        if filter:
-            sql = f'SELECT * FROM agencys WHERE id = {filter}'
-        else:
-            sql = 'SELECT * FROM agencys'
-
-        return self.query(sql, params=None)
-
-    # ----------------------------------------------------------------
-    # Methods to create Information in the Database
-    # ----------------------------------------------------------------
-
-    def create_invoice(self, arg):
-        """ Create a new invoice in the database """
-        sql = f"""
-        INSERT INTO
-            invoices (invoice_id, date, description, invoice_ammount, invoice_mwst, paydate, customer_id, jobcode_id, agency_id)
-        VALUES
-            ('{arg['invoice_id']}', '{arg['date']}', '{arg['description']}', {arg['invoice_ammount']}, {arg['invoice_mwst']}, '{arg['paydate']}', {arg['customer_id']}, {arg['jobcode_id']}, {arg['agency_id']})
-        """
-        self.execute(sql, params=None)
-        return self.cursor.lastrowid
-
-    def create_customer(self, arg):
-        """ Create a new customer in the database """
-        sql = f"""
-        INSERT INTO
-            customers (name, contact, street, postcode, city, country)
-        VALUES
-            ('{arg['name']}','{arg['contact']}','{arg['street']}',{arg['postcode']},'{arg['city']}','{arg['country']}')
-        """
-        self.execute(sql, params=None)
-        return self.cursor.lastrowid
-
-    def create_agency(self, arg):
-        """ Create a new agency in the database """
-        sql = f"""
-        INSERT INTO
-            agencys (name, percentage)
-        VALUES
-            ('{arg['name']}',{arg['percentage']})
-        """
-        self.execute(sql, params=None)
-        return self.cursor.lastrowid
-
-    def create_jobtype(self, arg):
-        """ Create a new Jobtype in the database """
-        sql = f"""
-        INSERT INTO
-            jobtypes (name)
-        VALUES
-            ('{arg['name']}')
-        """
-        self.execute(sql, params=None)
-        return self.cursor.lastrowid
-
-    # ----------------------------------------------------------------
-    # Methods to edit Information in the Database
-    # ----------------------------------------------------------------
-
-    def edit_invoice(self, arg, id):
-        """ Edit an invoice in the database """
-        update_query = f"""
-        UPDATE
-            invoices
-        SET
-            invoice_id = {arg['invoice_id']}
-            date = {arg['date']}
-            description = '{arg['description']}'
-            invoice_ammount = {arg['invoice_ammount']}
-            invoice_mwst = {arg['invoice_mwst']}
-            paydate = {arg['paydate']}
-            customer_id = {arg['customer_id']}
-            jobcode_id = {arg['jobcode_id']}
-            agency_id = {arg['agency_id']}
-
-        WHERE
-            id = {id}
-        """
-        self.execute(update_query, params=None)
-        return id
-
-    def edit_customer(self, arg, id):
-        """ Edit a customer in the database """
-        update_query = f"""
-        UPDATE
-            customers
-        SET
-            name = '{arg['name']}',
-            contact = '{arg['contact']}',
-            street = '{arg['street']}',
-            postcode = {arg['postcode']},
-            city = '{arg['city']}',
-            country = '{arg['country']}'
-        WHERE
-            id = {id}
-        """
-        self.execute(update_query, params=None)
-        return id
-
-    def edit_agency(self, arg, id):
-        """ Create a agency in the database """
-        update_query = f"""
-        UPDATE
-            agencys
-        SET
-            name = '{arg['name']}'
-            percentage = {arg['percentage']}
-        WHERE
-            id = {id}
-        """
-        self.execute(update_query, params=None)
-        return id
-
-    def edit_jobtype(self, arg, id):
-        """ Create a agency in the database """
-        update_query = f"""
-        UPDATE
-            jobtypes
-        SET
-            name = '{arg['name']}'
-        WHERE
-            id = {id}
-        """
-        self.execute(update_query, params=None)
-        return id
+        self._session.rollback()
 
 
 # =========================================
-# Function Definition for DB Interaction
+# Configuration of the DB Connection Object
 # =========================================
 
+# Define the Base for the Database assignement
+Base = declarative_base()
+# Define a DB session
+dbObject = Database(AppConfig)
+session = dbObject.ReturnSession()
+
+# =========================================
+# Definition for DB Interaction
+# =========================================
+
+# ===============================
+# Basic Function definition
+# ===============================
+
+
+class BaseMixin(object):
+    """
+    Some general Functionality for reusing
+    This Class and Functions are inherited in all other classes,
+    so it is easier just to define one "Base Class" with all needed
+    functionality
+    """
+
+    @ declared_attr
+    def __tablename__(cls):
+        return cls.__name__.lower()
+
+    __table_args__ = {'mysql_engine': 'InnoDB'}
+
+    id = Column(Integer, primary_key=True)
+
+    @ classmethod
+    def create(cls, obj):
+        # Create a new Entry in the DB
+        # check if the entry is already existant
+        try:
+            session.add(obj)
+            session.commit()
+            return obj.id
+        except Exception as e:
+            session.rollback()
+            log.error(
+                f"Not able to create object in '{cls.__tablename__(cls)}' with the Error:\n{e}")
+        return None
+
+    @ classmethod
+    def delete(cls, id):
+        # Delete Entry based on ID
+        obj = session.query(cls).filter(cls.id == id).first()
+        if not cls.check_relation():
+            session.delete(obj)
+            session.commit()
+        else:
+            return False
+
+    @ classmethod
+    def check_relation(cls):
+        # Check if we have any relation with this class
+        pass
+
+    @ classmethod
+    def get(cls, id=None, name=None):
+        # Return a specific result
+        if name:
+            result = session.query(cls).filter(cls.name == name).first()
+        elif id:
+            result = session.query(cls).filter(cls.id == id).first()
+        else:
+            result = None
+        # TODO: Enable more Filters for this querry !!!!
+        return result
+
+    @ classmethod
+    def get_all(cls):
+        # Return all entrys in the DB
+        return session.query(cls).all()
+
+    @ classmethod
+    def count(cls):
+        # Return the total count of all entrys
+        return session.query(cls).count()
+
+    @ classmethod
+    def check_link(cls):
+        # TODO: Impement a method that checks if a foreign key is uesd in an
+        # Invoice or not, so that we can delete an object safely
+        pass
+
+    @ classmethod
+    def update(cls, id, dUpdate):
+        # Update a DB entry
+        # REVIEW: Does this actually work as expected?
+        obj = cls.get(id)
+        try:
+            for key, value in dUpdate.items():
+                if hasattr(obj, key):
+                    setattr(obj, key, value)
+
+            session.commit()
+        except Exception:
+            session.rollback()
+
+
+# ===========
+# VERSION
+# ===========
+
+class Version(Base):
+    """ Version to store the version nr of the DB """
+    # TODO: Implement a propper version control !!
+
+    __tablename__ = "version"
+    id = Column(Integer, primary_key=True)
+    version = Column(Integer)
+
+
+# ===========
+# Personal Details
+# ===========
+
+
+class PersonalDetails(BaseMixin, Base):
+    """ DB Interaction for personal Details """
+
+    label = Column(VARCHAR)
+
+    name_company = Column(VARCHAR)
+    name = Column(VARCHAR)
+
+    street = Column(VARCHAR)
+    postcode = Column(Integer)
+    city = Column(VARCHAR)
+
+    mail = Column(VARCHAR)
+    phone = Column(VARCHAR)
+
+    taxnumber = Column(VARCHAR)
+
+    payment_id = Column(Integer, ForeignKey("paymentdetails.id"))
+    payment_details = relationship("PaymentDetails", foreign_keys=[payment_id])
+
+
+class PaymentDetails(BaseMixin, Base):
+    """ DB Interaction for payment Details """
+
+    label = Column(VARCHAR)
+
+    name = Column(VARCHAR)
+    bank = Column(VARCHAR)
+    IBAN = Column(VARCHAR)
+    BIC = Column(VARCHAR)
+
+
+# ===========
+# EXPENSES
+# ===========
+
+class Expenses(BaseMixin, Base):
+    """ DB Interaction class for Expenses """
+
+    expense_id = Column(VARCHAR)
+    date = Column(Date)
+    cost = Column(FLOAT)
+    comment = Column(VARCHAR)
+
+    @ classmethod
+    def get_latest_id(cls):
+        obj = session.query(cls).order_by(cls.id.desc()).first()
+        if not obj:
+            return pp.get_new_id()
+        return pp.get_new_id(obj.expense_id)
+
+    @ classmethod
+    def get_all(cls, year=None):
+        if year:
+            # Return DB entrys filterd by year
+            return session.query(cls).filter(extract('year', cls.date) == int(year)).all()
+        else:
+            # Return all entrys in the DB
+            return session.query(cls).all()
 # ===========
 # INVOICES
 # ===========
-def get_invoice(filter=None):
-    with Database() as db:
-        try:
-            request = db.get_invoices(filter=filter)
-            print(f'Requested INVOICES')
-            print(request)
-            return request
-        except Exception as e:
-            # If we encounter some problem, rollback the last changes
-            print(e)
 
 
-def create_invoice(data):
-    with Database() as db:
-        try:
-            newID = db.create_invoice(data)
-            print(f'Created new INVOICE with ID : {newID}')
-            print(db.query(f"SELECT * FROM invoices where id= '{newID}'"))
-            return newID
-        except Exception as e:
-            # If we encounter some problem, rollback the last changes
-            print(e)
-            db.rollback()
+class Invoices(BaseMixin, Base):
+    """ DB Interaction class for Invoices """
 
+    invoice_id = Column(VARCHAR)
+    date = Column(Date)
+    description = Column(VARCHAR)
+    invoice_ammount = Column(FLOAT)
+    invoice_mwst = Column(FLOAT)
+    paydate = Column(Date)
+    invoice_data = Column(JSON)
 
-def edit_invoice(data, id):
-    with Database() as db:
-        try:
-            db.edit_invoice(data, id)
-            print(f'Edited INVOICE with ID : {id}')
-            print(db.query(f"SELECT * FROM invoices where id= '{id}'"))
-            return id
-        except Exception as e:
-            # If we encounter some problem, rollback the last changes
-            print(e)
-            db.rollback()
+    customer_id = Column(Integer, ForeignKey("customers.id"))
+    jobcode_id = Column(Integer, ForeignKey("jobtypes.id"))
+    agency_id = Column(Integer, ForeignKey("agencys.id"))
+    personal_id = Column(Integer, ForeignKey("personaldetails.id"))
 
+    customer = relationship("Customers", foreign_keys=[customer_id])
+    jobtype = relationship("Jobtypes", foreign_keys=[jobcode_id])
+    agency = relationship("Agencys", foreign_keys=[agency_id])
+    personal = relationship("PersonalDetails", foreign_keys=[personal_id])
 
-# ===========
+    @ classmethod
+    def get_latest_id(cls):
+        obj = session.query(cls).order_by(cls.id.desc()).first()
+        if not obj:
+            return pp.get_new_id()
+        return pp.get_new_id(obj.invoice_id)
+
+    @classmethod
+    def get_latest_invoice_id(cls):
+        obj = session.query(cls).order_by(cls.id.desc()).first()
+
+    @ classmethod
+    def get_all(cls, year=None):
+        if year:
+            # Return DB entrys filterd by year
+            return session.query(cls).filter(extract('year', cls.date) == int(year)).all()
+        else:
+            # Return all entrys in the DB
+            return session.query(cls).all()
+    # ===========
 # CUSTOMERS
 # ===========
 
-def get_customer(filter=None):
-    with Database() as db:
-        try:
-            request = db.get_customers(filter=filter)
-            print(f'Requested CUSTOMERS')
-            print(request)
-            return request
-        except Exception as e:
-            # If we encounter some problem, rollback the last changes
-            print(e)
 
+class Customers(BaseMixin, Base):
+    """ DB Interaction class for Customers """
 
-def create_customer(data):
-    with Database() as db:
-        try:
-            newID = db.create_customer(data)
-            print(f'Created new CUSTOMER with ID : {newID}')
-            print(db.query(f"SELECT * FROM customers where id= '{newID}'"))
-            return newID
-        except Exception as e:
-            # If we encounter some problem, rollback the last changes
-            print(e)
-            db.rollback()
-
-
-def edit_customer(data, id):
-    with Database() as db:
-        try:
-            db.edit_customer(data, id)
-            print(f'Edited CUSTOMER with ID : {id}')
-            print(db.query(f"SELECT * FROM invoices where id= '{id}'"))
-            return id
-        except Exception as e:
-            # If we encounter some problem, rollback the last changes
-            print(e)
-            db.rollback()
+    name = Column(VARCHAR)
+    email = Column(VARCHAR)
+    phone = Column(VARCHAR)
+    contact = Column(VARCHAR)
+    street = Column(VARCHAR)
+    postcode = Column(Integer)
+    city = Column(VARCHAR)
+    country = Column(VARCHAR)
 
 
 # ===========
 # AGENCYS
 # ===========
-def get_agency(filter=None):
-    with Database() as db:
-        try:
-            request = db.get_agencys(filter=filter)
-            print(f'Requested AGENCYS')
-            print(request)
-            return request
-        except Exception as e:
-            # If we encounter some problem, rollback the last changes
-            print(e)
 
+class Agencys(BaseMixin, Base):
+    """ DB Interaction class for Agencys """
 
-def create_agency(data):
-    with Database() as db:
-        try:
-            newID = db.create_agency(data)
-            print(f'Created new AGENCY with ID : {newID}')
-            print(db.query(f"SELECT * FROM agencys where id= '{newID}'"))
-            return newID
-        except Exception as e:
-            # If we encounter some problem, rollback the last changes
-            print(e)
-            db.rollback()
-
-
-def edit_agency(data, id):
-    with Database() as db:
-        try:
-            db.edit_agency(data, id)
-            print(f'Edited AGENCY with ID : {id}')
-            print(db.query(f"SELECT * FROM invoices where id= '{id}'"))
-            return id
-        except Exception as e:
-            # If we encounter some problem, rollback the last changes
-            print(e)
-            db.rollback()
+    name = Column(VARCHAR)
+    percentage = Column(FLOAT)
 
 
 # ===========
 # JOBTYYPES
 # ===========
-def get_jobtype(filter=None):
-    with Database() as db:
-        try:
-            request = db.get_jobtypes(filter=filter)
-            print(f'Requested JOBTYPE')
-            print(request)
-            return request
-        except Exception as e:
-            # If we encounter some problem, rollback the last changes
-            print(e)
+
+class Jobtypes(BaseMixin, Base):
+    """ DB Interaction class for Jobtypes """
+
+    name = Column(VARCHAR)
 
 
-def create_jobtype(data):
-    with Database() as db:
-        try:
-            newID = db.create_jobtype(data)
-            print(f'Created new JOBTYPE with ID : {newID}')
-            print(db.query(f"SELECT * FROM jobtypes where id= '{newID}'"))
-            return newID
-        except Exception as e:
-            # If we encounter some problem, rollback the last changes
-            print(e)
-            db.rollback()
-
-
-def edit_jobtype(data, id):
-    with Database() as db:
-        try:
-            db.edit_jobtype(data, id)
-            print(f'Edited JOBTYPE with ID : {id}')
-            print(db.query(f"SELECT * FROM jobtypes where id= '{id}'"))
-            return id
-        except Exception as e:
-            # If we encounter some problem, rollback the last changes
-            print(e)
-            db.rollback()
+# Create the Database based on the definition available in the File
+Base.metadata.create_all(dbObject.engine)

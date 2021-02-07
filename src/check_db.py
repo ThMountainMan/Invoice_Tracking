@@ -1,140 +1,94 @@
-# Scrit to set up and configure the Database
-from mysql.connector import connect, Error
+import database as DB
+from dateutil import parser
+import logging
+
+# Init the Logger
+log = logging.getLogger(__name__)
 
 
 def DB_Update():
     pass
 
 
-def DB_Validation(config):
-    Proceed = False
+def DB_Validation():
+    """ Try to read the First entry from the DB """
     try:
-        with connect(host=config.get('address'),
-                     user=config.get('user'),
-                     password=config.get('password'),
-                     port=config.get('port')) as connection:
-
-            with connection.cursor() as cursor:
-                # Display all available Databases on MySQL Server
-                # Check if the needed DB is already available
-                show_db_query = "SHOW DATABASES"
-
-                cursor.execute(show_db_query)
-                for db in cursor:
-                    if config.get('database') in db[0]:
-                        Proceed = True
-                        break
-
-    except Error as e:
-        print(e)
-    finally:
-        return Proceed
+        Test_Data = DB.Invoices.get(1)
+        if not Test_Data.invoice_id:
+            return False
+        else:
+            return True
+    except Exception:
+        return False
 
 
 def DB_CreateDB(config):
-    Proceed = False
-    try:
-        with connect(host=config.get('address'),
-                     user=config.get('user'),
-                     password=config.get('password'),
-                     port=config.get('port')) as connection:
-
-            with connection.cursor() as cursor:
-                # Display all available Databases on MySQL Server
-                # Check if the needed DB is already available
-                print(f"Create new Database : {config.get('database')}")
-                create_db_query = f"CREATE DATABASE {config.get('database')}"
-                cursor.execute(create_db_query)
-
-        Proceed = True
-
-    except Error as e:
-        print(e)
-    finally:
-        return Proceed
+    pass
 
 
 def DB_CreateTables(config):
-    Proceed = False
-    try:
-        with connect(host=config.get('address'),
-             user=config.get('user'),
-             password=config.get('password'),
-             port=config.get('port'),
-             database=config.get('database')) as connection:
+    pass
 
-            with connection.cursor() as cursor:
-                # We need to create the Database for the Invoice Tool
-                print(f"Create new Tables in {config.get('database')}:")
 
-                create_customer_table_query = """
-                CREATE TABLE customers (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    name VARCHAR(100),
-                    contact VARCHAR(100),
-                    street VARCHAR(100),
-                    postcode VARCHAR(100),
-                    city VARCHAR(100),
-                    country VARCHAR(100)
-                )
-                """
+def DB_CreateDummys():
+    """ Fill the DB with test Data .... """
 
-                print(" - Create CUSTOMERS table ...")
-                cursor.execute(create_customer_table_query)
+    log.info("Adding Test entrys to the Database ...")
 
-                # ===================================================
+    new_payment = DB.PaymentDetails(label="Test Account",
+                                    name="Klaus Albers",
+                                    bank="Butterbrot Bank",
+                                    IBAN="125454-dfsdf-45454",
+                                    BIC="1234567")
 
-                create_agency_table_query = """
-                CREATE TABLE agencys (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    name VARCHAR(100),
-                    percentage DECIMAL(3,1)
-                )
-                """
+    new_personal = DB.PersonalDetails(label="Test Person",
+                                      name_company="Nothing CoKg",
+                                      name="Hans Wurst",
+                                      street="Schinkenstrasse 45",
+                                      postcode=45356,
+                                      city="Darmstadt",
+                                      mail="hans@wurst.de",
+                                      phone=11123456,
+                                      payment_id=1)
 
-                print(" - Create AGENCYS table ...")
-                cursor.execute(create_agency_table_query)
+    new_expense = DB.Expenses(expense_id="2020-001",
+                              date=parser.parse("2020-01-01"),
+                              cost=1234,
+                              comment="This is a test Expense")
 
-                # ===================================================
+    new_Agency = DB.Agencys(name="Agency Stargazer",
+                            percentage=10)
 
-                create_jobtype_table_query = """
-                CREATE TABLE jobtypes (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    name VARCHAR(100)
-                )
-                """
+    new_jobtype = DB.Jobtypes(name="Test Job")
 
-                print(" - Create JOBTYPES table ...")
-                cursor.execute(create_jobtype_table_query)
+    new_customer = DB.Customers(name="Agency Hupentitt",
+                                contact="Tittz Mc Gee",
+                                email="this@that.de",
+                                phone=101234568,
+                                street="Wumsstreet 56",
+                                postcode=123456,
+                                city="Hannesburg",
+                                country="Germany")
 
-                # ===================================================
+    new_invoice = DB.Invoices(invoice_id="2021-001",
+                              date=parser.parse("2021-02-02"),
+                              description="This is a Test invoice",
+                              invoice_ammount=1234,
+                              invoice_mwst=16,
+                              paydate=None,
+                              customer_id=1,
+                              jobcode_id=1,
+                              agency_id=1,
+                              invoice_data={'comment': "Item has been sold and I have done this",
+                                            'ammount': 4,
+                                            'price': 45})
 
-                create_invoice_table_query = """
-                CREATE TABLE invoices (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    invoice_id VARCHAR(8)
-                    date DATE,
-                    description LONGTEXT,
-                    invoice_ammount DECIMAL(8,2),
-                    invoice_mwst INT,
-                    paydate DATE,
+    DB.PaymentDetails.create(new_payment)
+    DB.PersonalDetails.create(new_personal)
+    DB.Expenses.create(new_expense)
 
-                    customer_id INT,
-                    jobcode_id INT,
-                    agency_id INT,
+    DB.Agencys.create(new_Agency)
+    DB.Customers.create(new_customer)
+    DB.Jobtypes.create(new_jobtype)
 
-                    FOREIGN KEY(customer_id) REFERENCES customers(id),
-                    FOREIGN KEY(jobcode_id) REFERENCES jobtypes(id),
-                    FOREIGN KEY(agency_id) REFERENCES agencys(id)
-                )
-                """
-
-                print(" - Create INVOICES table ...")
-                cursor.execute(create_invoice_table_query)
-
-        Proceed = True
-
-    except Error as e:
-        print(e)
-    finally:
-        return Proceed
+    DB.Invoices.create(new_invoice)

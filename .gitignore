@@ -1,4 +1,16 @@
-*_config.yml
+*.yml
 *.pyc
+*.db
+*.
+*.map
+
+*.log
+*.pdf
+
+.vscode/
 
 _test/
+scripts/
+documentation/
+recources/wkhtmltopdf/
+Temp/

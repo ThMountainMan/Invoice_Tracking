@@ -1,6 +1,0 @@
-database:
-  address: "XXX.XXX.XXX.XXX"
-  port : "XXX"
-  database : "XXX"
-  user: "XXX"
-  password : "XXX"
