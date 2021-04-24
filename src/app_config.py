@@ -21,6 +21,7 @@ class appconfig(object):
         self.debug = self.cfg.get('debug')
         self.local = self.cfg.get('use_local')
         self.pfd_creator = self.cfg.get('wkhtmltopdf_path')
+
         # DB settings
         self.db_path = self.cfg['database'].get('db_path')
         self.db_name = self.cfg['database'].get('database')

@@ -8,7 +8,6 @@ import logging
 import threading
 import bottle
 from app_config import AppConfig
-import os
 
 
 # Apply GEVENT patches to bottle server to enable asynchronous functionality

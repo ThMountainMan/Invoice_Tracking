@@ -126,21 +126,21 @@
                 <table class="table table-striped">
                   <thead>
                     <tr class="line">
-                      <td><strong>#</strong></td>
-                      <td class="text-center"><strong>BESCHREIBUNG</strong></td>
+                      <td><strong>Pos.</strong></td>
+                      <td class="text-left"><strong>BESCHREIBUNG</strong></td>
                       <td class="text-center"><strong>ANZAHL / STUNDEN</strong></td>
                       <td class="text-center"><strong>PREIS / HONORAR</strong></td>
                       <td class="text-right"><strong>Zwischensumme</strong></td>
                     </tr>
                   </thead>
                   <tbody>
-                    % for item in items['ITEMS']:
+                    % for id, item in enumerate(items):
                     <tr>
-                      <td><strong>{{item}}</strong></td>
-                      <td>{{items['ITEMS'][item]['comment'].encode('iso-8859-1')}}</td>
-                      <td class="text-center">{{items['ITEMS'][item]['count']}}</td>
-                      <td class="text-center">{{"{:.2f}".format(items['ITEMS'][item]['price'])}} €</td>
-                      <td class="text-right">{{"{:.2f}".format(items['ITEMS'][item]['subtotal'])}} €</td>
+                      <td><strong>{{id + 1}}</strong></td>
+                      <td>{{item.description}}</td>
+                      <td class="text-center">{{item.count}}</td>
+                      <td class="text-center">{{"{:.2f}".format(item.cost)}} €</td>
+                      <td class="text-right">{{"{:.2f}".format(item.cost * item.count)}} €</td>
                     </tr>
                     % end
                   </tbody>
@@ -153,20 +153,20 @@
                       <td class="text-right"><strong>Summe Netto</strong></td>
                       <td class="text-right"><strong>{{"{:.2f}".format(total)}} €</strong></td>
                     </tr>
-                    % if invoice_mwst:
+                    % if invoice.invoice_mwst:
                     <tr>
                       <td colspan="3"></td>
-                      <td class="text-right"><strong>Mwst. {{invoice.invoice_mwst}} %</strong></td>
-                      <td class="text-right"><strong>{{invoice_mwst}} €</strong></td>
+                      <td class="text-right"><strong>zzgl. {{invoice.invoice_mwst}} % MwSt.</strong></td>
+                      <td class="text-right"><strong>{{"{:.2f}".format(mwst)}} €</strong></td>
                     </tr>
                     %end
                     <tr>
                       <td colspan="3"></td>
                       <td class="text-right"><strong>Rechnugsbetrag</strong></td>
-                      % if invoice_mwst:
-                      <td class="text-right"><strong>{{"{:.2f}".format(total + invoice_mwst)}} €</strong></td>
+                      % if invoice.invoice_mwst:
+                      <td class="text-right"><strong><big>{{"{:.2f}".format(total_mwst)}} €</big></strong></td>
                       %else:
-                      <td class="text-right"><strong>{{"{:.2f}".format(total)}} €</strong></td>
+                      <td class="text-right"><strong><big>{{"{:.2f}".format(total)}} €</big></strong></td>
                       %end
                     </tr>
                   </tbody>

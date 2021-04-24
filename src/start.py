@@ -13,7 +13,6 @@ import logging
 import website
 from app_config import AppConfig
 
-import check_db
 
 FORMAT = "[%(levelname)-5s] %(name)-20s %(message)s"
 
@@ -73,10 +72,7 @@ def init_logger():
 
 if __name__ == "__main__":
     # Validate the DB connection
-    if not check_db.DB_Validation():
-        # If no data is available create dummy data
-        check_db.DB_CreateDummys()
-
+    # TODO: Do we need to validate the DB connection ?
     # Start the Server
     if True:
         main(blocking=True)

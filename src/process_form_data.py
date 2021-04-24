@@ -1,4 +1,3 @@
-from os import name
 from dateutil import parser
 
 """ Parse the HTML Form Data and return an update dictionary """

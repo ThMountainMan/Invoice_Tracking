@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from datetime import datetime
 from dateutil import parser
 from app_config import AppConfig
 import database as DB
@@ -12,7 +11,6 @@ from bottle import route, static_file
 from bottle import request, redirect, template
 
 import export
-import postprocessing as pp
 import process_form_data as fData
 
 import logging
@@ -32,18 +30,23 @@ bottle.TEMPLATE_PATH.insert(0, os.path.join(
 @route("/invoices")
 @route("/")
 def invoices(year=None):
-    # If there is a year specified, gett all invoices for this years
+    # If there is a year specified, get all invoices for this years
     Data = DB.Invoices.get_all(year)
+    # Get all expenses for the selected year
     Expenses = DB.Expenses.get_all(year)
-
+    # Get all available Jobtypes ( for the filter )
     jobtypes = DB.Jobtypes.get_all()
+
     # Calculations for the income overview
-    income = sum([res.invoice_ammount for res in Data if res.paydate])
-    outstanding = sum([res.invoice_ammount for res in Data if not res.paydate])
+    income = sum([res.get_ammount()['sum_mwst']
+                 for res in Data if res.paydate])
+    outstanding = sum([res.get_ammount()['sum_mwst']
+                      for res in Data if not res.paydate])
     expenses = sum([res.cost for res in Expenses])
     dOverview = {'income': round(income, 2), 'outstanding': round(outstanding, 2),
                  'expenses': round(expenses, 2), 'profit': round(income - expenses, 2)}
-    # Return the template with the data
+
+    # Return the template with the defined data
     return template("invoices.tpl", overview=dOverview, input=Data, jobtypes=jobtypes)
 
 
@@ -53,29 +56,28 @@ def invoice_get(id=None):
     Data = DB.Invoices.get(id)
     log.info(f"Show invoice -{Data.invoice_id}- with id : {id} ...")
 
-    # Data manipulation
-    # TODO:  process the data so that we can use it!!
-    if float(Data.invoice_mwst):
-        invoice_mwst = round(
-            Data.invoice_data['TOTAL'] * (Data.invoice_mwst / 100), 2)
-    else:
-        invoice_mwst = None
-
     html_data = template("Invoice/Invoice_V1.tpl",
                          invoice=Data,
-                         items=Data.invoice_data,
-                         total=Data.invoice_data['TOTAL'],
-                         invoice_mwst=invoice_mwst)
+                         items=Data.get_items(),
+                         total=Data.get_ammount()['sum'],
+                         mwst=Data.get_ammount()['mwst'],
+                         total_mwst=Data.get_ammount()['sum_mwst'])
 
     if request.method == "POST":
         File, Path = export.export_to_pdf(html_data, Data)
-
-        print(File)
-        print(Path)
         return static_file(File, root=Path, download=File)
         # redirect("/invoices")
     else:
         return html_data
+
+
+@ route("/invoice_edit/<id>")
+@ route("/invoice_edit/<id>", method="POST")
+def invoice_edit(id=None):
+    print("Edit Invoice ...")
+    if request.method == 'POST' and id:
+        # Get the Data for the given invoice
+        Data = DB.Invoices.get(id)
 
 
 @ route("/invoice_add")
@@ -88,34 +90,33 @@ def invoice_add(id=None):
         # Get the Form Data as Dict
         Data = request.forms
 
-        # Data Postprocessing before submitting to DB
-        invoice_data = pp.pp_invoicedata(request.POST.getall('ammount'),
-                                         request.POST.getall('price'),
-                                         request.POST.getall('comment'))
-
-        if float(Data.get('mwst')):
-            invoice_total = round(
-                invoice_data['TOTAL'] * (1+(float(Data.get('mwst')) / 100)), 2)
-        else:
-            invoice_total = round(invoice_data['TOTAL'], 2)
-
-        print(type((Data.get('customer_id'))))
         # Prepare the Data for DB input
         new = DB.Invoices(invoice_id=Data.get('id'),
                           date=parser.parse(Data.get('date')),
                           description=None,
-                          invoice_ammount=invoice_total,
                           invoice_mwst=Data.get('mwst'),
                           paydate=None,
                           # Get all related Data
                           customer_id=Data.get('customer_id'),
                           jobcode_id=Data.get('jobtype_id'),
                           agency_id=Data.get('agency_id'),
-                          personal_id=Data.get('personal_id'),
-                          # Get the Invoice item data
-                          invoice_data=invoice_data)
+                          personal_id=Data.get('personal_id'))
 
+        # Create a new Invoice in the DB
         newID = DB.Invoices.create(new)
+
+        # Creat a joint list of the invoice items
+        lItems = map(list, zip(request.POST.getall('ammount'), request.POST.getall(
+            'price'), request.POST.getall('comment')))
+
+        for _item in lItems:
+            _new = DB.Invoices_Item(parent_id=newID,
+                                    description=_item[2].encode('iso-8859-1'),
+                                    count=_item[0],
+                                    cost=_item[1])
+            # Create a new DB entry for the items
+            DB.Invoices_Item.create(_new)
+
         # redirect(f"/invoice_show/{newID}", code=307)
         # redirect(f"/invoice_show/{newID}")
         redirect("/invoices")

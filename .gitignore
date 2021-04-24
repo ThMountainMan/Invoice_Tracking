@@ -8,9 +8,12 @@
 *.pdf
 
 .vscode/
+.venv/
 
 _test/
 scripts/
 documentation/
 recources/wkhtmltopdf/
 Temp/
+2021/
+__pycache__/

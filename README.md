@@ -11,6 +11,7 @@ usefull that is need in my day to day life. Currently I keep track of my Invoice
   - Database Interaction
   - Create Invoice
   - Print / Store Invoice
+  - DB Revisioning
 
 ## Current Functionality :
 
@@ -29,6 +30,11 @@ https://github.com/wkhtmltopdf/wkhtmltopdf
 
 ### Ability of the Database / Weberver
 =======
+
+### DB Functionality
+- [x] DB Revisioning available with alembic
+- [ ] Export the DB in CSV Format
+
 ### Create a Python Script with basic functionality
 
 - [x] Create / Edit Invoice
@@ -50,7 +56,6 @@ https://github.com/wkhtmltopdf/wkhtmltopdf
 The Information is stored in a local sqllite database.
 The functionality can be extended to store the date in a remote DB
 
-- [ ] Store the Data in CSV Format
 - [x] Extend the functionality to store the information in MySQL Database
 
 ### Create a GUI for Interaction
@@ -61,7 +66,6 @@ Interaction with the Tool is based on a Python Bottle Webserver.
 - [x] Create a Webinterface
 
 ### Create Invoices
-
 
 In order to visualize the Invoice Data, a HTML template has been added.
 

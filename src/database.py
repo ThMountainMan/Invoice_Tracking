@@ -10,8 +10,9 @@ from sqlalchemy import ForeignKey, extract
 from sqlalchemy.ext.declarative import declared_attr
 
 from app_config import AppConfig
+import db_migration
 
-import postprocessing as pp
+from datetime import datetime
 
 import logging
 
@@ -44,7 +45,7 @@ class Database:
 
             if not os.path.exists(path):
                 os.makedirs(path)
-            return f'sqlite:///{path}//invoice_database.db?charset=utf8'
+            return f'sqlite:///{path}//{self.config.db_name}.db?charset=utf8'
 
         # In Case we want to connect to a remote SQL DB
         else:
@@ -62,6 +63,14 @@ class Database:
     def ReturnSession(self):
         return self._Session
 
+    def check_db_version(self):
+        pass
+
+    def db_migration(self):
+        # Run the DB Migration if needed
+        db_migration.run_migrations(
+            script_location="./src/db_migration", dsn=self._CreateDbString())
+
     def close(self, commit=True):
         self._session.close()
 
@@ -77,6 +86,9 @@ class Database:
 Base = declarative_base()
 # Define a DB session
 dbObject = Database(AppConfig)
+# Check if we need to migrate the DB
+dbObject.db_migration()
+# Create a session for the DB
 session = dbObject.ReturnSession()
 
 # =========================================
@@ -177,19 +189,6 @@ class BaseMixin(object):
 
 
 # ===========
-# VERSION
-# ===========
-
-class Version(Base):
-    """ Version to store the version nr of the DB """
-    # TODO: Implement a propper version control !!
-
-    __tablename__ = "version"
-    id = Column(Integer, primary_key=True)
-    version = Column(Integer)
-
-
-# ===========
 # Personal Details
 # ===========
 
@@ -238,12 +237,27 @@ class Expenses(BaseMixin, Base):
     cost = Column(FLOAT)
     comment = Column(VARCHAR)
 
-    @ classmethod
+    @classmethod
     def get_latest_id(cls):
         obj = session.query(cls).order_by(cls.id.desc()).first()
         if not obj:
-            return pp.get_new_id()
-        return pp.get_new_id(obj.expense_id)
+            return f"{datetime.now().year}-{1:03}"
+        else:
+            # Split the String
+            year, id = obj.expense_id.split("-")
+
+            # Check if the Year is still valid
+            if int(year) != datetime.now().year:
+                # We need to create an ID with a new year
+                new_year = datetime.now().year
+                # also we probably need to start to count from 1 again
+                new_id = 1
+            else:
+                new_year = year
+                # Increment the ID
+                new_id = int(id) + 1
+
+            return f"{new_year}-{new_id:03}"
 
     @ classmethod
     def get_all(cls, year=None):
@@ -256,6 +270,17 @@ class Expenses(BaseMixin, Base):
 # ===========
 # INVOICES
 # ===========
+
+
+class Invoices_Item(BaseMixin, Base):
+    """ DB Interaction class for Invoices Items """
+
+    description = Column(VARCHAR)
+    count = Column(FLOAT)
+    cost = Column(FLOAT)
+
+    parent_id = Column(Integer, ForeignKey('invoices.id'))
+    parent = relationship("Invoices", foreign_keys=[parent_id])
 
 
 class Invoices(BaseMixin, Base):
@@ -274,6 +299,7 @@ class Invoices(BaseMixin, Base):
     agency_id = Column(Integer, ForeignKey("agencys.id"))
     personal_id = Column(Integer, ForeignKey("personaldetails.id"))
 
+    items = relationship("Invoices_Item")
     customer = relationship("Customers", foreign_keys=[customer_id])
     jobtype = relationship("Jobtypes", foreign_keys=[jobcode_id])
     agency = relationship("Agencys", foreign_keys=[agency_id])
@@ -283,10 +309,25 @@ class Invoices(BaseMixin, Base):
     def get_latest_id(cls):
         obj = session.query(cls).order_by(cls.id.desc()).first()
         if not obj:
-            return pp.get_new_id()
-        return pp.get_new_id(obj.invoice_id)
+            return f"{datetime.now().year}-{1:03}"
+        else:
+            # Split the String
+            year, id = obj.invoice_id.split("-")
 
-    @classmethod
+            # Check if the Year is still valid
+            if int(year) != datetime.now().year:
+                # We need to create an ID with a new year
+                new_year = datetime.now().year
+                # also we probably need to start to count from 1 again
+                new_id = 1
+            else:
+                new_year = year
+                # Increment the ID
+                new_id = int(id) + 1
+
+            return f"{new_year}-{new_id:03}"
+
+    @ classmethod
     def get_latest_invoice_id(cls):
         obj = session.query(cls).order_by(cls.id.desc()).first()
 
@@ -298,7 +339,36 @@ class Invoices(BaseMixin, Base):
         else:
             # Return all entrys in the DB
             return session.query(cls).all()
-    # ===========
+
+    def get_ammount(self):
+        # ToDo: Generatr function to return all incoive items
+        _items = session.query(Invoices_Item).filter(
+            Invoices_Item.parent_id == self.id).all()
+        sum = 0
+        mwst = 0
+        sum_mwst = 0
+
+        _dict = {'sum': sum, 'mwst': mwst, 'sum_mwst': sum_mwst}
+
+        for i in _items:
+            sum += i.cost * i.count
+
+        if self.invoice_mwst:
+            mwst = self.invoice_mwst / 100 * sum
+            sum_mwst = sum + mwst
+        else:
+            sum_mwst = sum
+
+        _dict['sum'] = float(round(sum, 2))
+        _dict['mwst'] = float(round(mwst, 2))
+        _dict['sum_mwst'] = float(round(sum_mwst, 2))
+
+        return _dict
+
+    def get_items(self):
+        return session.query(Invoices_Item).filter(
+            Invoices_Item.parent_id == self.id).all()
+# ===========
 # CUSTOMERS
 # ===========
 
@@ -338,4 +408,4 @@ class Jobtypes(BaseMixin, Base):
 
 
 # Create the Database based on the definition available in the File
-Base.metadata.create_all(dbObject.engine)
+# Base.metadata.create_all(dbObject.engine)
