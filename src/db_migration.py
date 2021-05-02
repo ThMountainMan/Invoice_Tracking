@@ -33,7 +33,7 @@ def get_current_database_version(input_cfg):
 
 def run_migrations(script_location: str, dsn: str) -> None:
     LOG.info('Running DB migrations in %r on %r', script_location, dsn)
-    print(f'Running DB migrations in {script_location} on {dsn}')
+    LOG.info(f'Running DB migrations in {script_location} on {dsn}')
     alembic_cfg = Config()
     # Set the Folder with the migration scripts
     alembic_cfg.set_main_option('script_location', script_location)
@@ -43,7 +43,7 @@ def run_migrations(script_location: str, dsn: str) -> None:
     # info about the currently used DB version
     current_db_version = get_current_database_version(alembic_cfg)
 
-    print(f"Current DB Version is : {current_db_version}")
+    LOG.info(f"Current DB Version is : {current_db_version}")
     # Check if we are already on the head revision or not
     if not current_db_version:
         # TODO: We do not have any version info, what are we doing now ?!
@@ -59,13 +59,13 @@ def run_migrations(script_location: str, dsn: str) -> None:
     else:
         # Check if we have the head revision or not
         if not "head" in current_db_version:
-            print("DB is NOT up to date ...")
-            print("Starting upgrade process ...")
+            LOG.info("DB is NOT up to date ...")
+            LOG.info("Starting upgrade process ...")
             # Start the upgrade process
             command.upgrade(alembic_cfg, 'head')
 
         else:
-            print("DB is up to date ...")
+            LOG.info("DB is up to date ...")
 
 
 if __name__ == "__main__":
