@@ -5,30 +5,28 @@
 Startup script for the Invoice Tracker Webservice
 """
 
-import server
-import os
-import sys
-import site
 import logging
-import website
-from app_config import AppConfig
+import os
+import site
+import sys
 
+import server
+import web
+from app_config import AppConfig
 
 FORMAT = "[%(levelname)-5s] %(name)-20s %(message)s"
 
 THISDIR = os.path.dirname(__file__)
 SVC_NAME = "Invoice_Tracker"
 SVC_DISPLAY_NAME = f"_{SVC_NAME}"
-DEFAULT_CFG = os.path.abspath(os.path.join(THISDIR, 'config.yml'))
+DEFAULT_CFG = os.path.abspath(os.path.join(THISDIR, "config.yml"))
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format=FORMAT)
 
 log = logging.getLogger()
 
 # Only for debug. We add additional search pathes to external packages
-site.addsitedir(os.path.abspath(
-    os.path.join(THISDIR, '..', '.debug')
-))
+site.addsitedir(os.path.abspath(os.path.join(THISDIR, "..", ".debug")))
 
 
 def main(config_file=DEFAULT_CFG, blocking=True, argv=None):
@@ -49,25 +47,22 @@ def main(config_file=DEFAULT_CFG, blocking=True, argv=None):
 
 
 def init_logger():
-    log.info("init logging: level=%s file=%s",
-             logging.INFO, "server_logging.log")
+    log.info("init logging: level=%s file=%s", logging.INFO, "server_logging.log")
 
-    level = getattr(logging, 'INFO')
+    level = getattr(logging, "INFO")
     log.setLevel(level)
     # define a Handler which writes to sys.stdout
     console = logging.StreamHandler(sys.stdout)
     console.setFormatter(logging.Formatter(FORMAT))
     log.addHandler(console)
     logging.info("log file: %s", "server_logging.log")
-    if True:
-        fhandler = logging.FileHandler("server_logging.log")
-        fhandler.setFormatter(
-            logging.Formatter(
-                "%(levelname)-8s %(name)-30s %(funcName)-30s "
-                "ln:%(lineno)04i %(message)s"
-            )
+    fhandler = logging.FileHandler("server_logging.log")
+    fhandler.setFormatter(
+        logging.Formatter(
+            "%(levelname)-8s %(name)-30s %(funcName)-30s " "ln:%(lineno)04i %(message)s"
         )
-        log.addHandler(fhandler)
+    )
+    log.addHandler(fhandler)
 
 
 if __name__ == "__main__":

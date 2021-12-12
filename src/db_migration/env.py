@@ -46,7 +46,7 @@ def run_migrations_offline():
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         version_table="db_version",
-        render_as_batch=True
+        render_as_batch=True,
     )
 
     with context.begin_transaction():
@@ -64,12 +64,14 @@ def run_migrations_online():
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-
     )
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata, version_table="db_version", render_as_batch=True
+            connection=connection,
+            target_metadata=target_metadata,
+            version_table="db_version",
+            render_as_batch=True,
         )
 
         with context.begin_transaction():
