@@ -8,12 +8,263 @@ import sqlalchemy
 from sqlalchemy import FLOAT, JSON, VARCHAR, Column, Date, ForeignKey, Integer, extract
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import relationship, scoped_session, sessionmaker
+from contextlib import contextmanager
 
 from app_config import AppConfig
 from db_migration import migration
 
 # Init the Logger
 log = logging.getLogger(__name__)
+
+Base = declarative_base()
+Session = sessionmaker()
+
+
+class NotExists(Exception):
+    """Is raised if a database instance could not be found"""
+
+
+class RegisteredModels(dict):
+    def register(self, writeable=True, admin_only=False):
+        def _register(cls):
+            self[cls.__tablename__] = cls
+            cls._writeable = writeable
+            cls._admin_only = admin_only
+            return cls
+
+        return _register
+
+    def get_model(self, model_or_name):
+        if isinstance(model_or_name, str):
+            try:
+                return self[model_or_name]
+            except KeyError:
+                raise NotExists(f"No database model with name {model_or_name} found!")
+        return model_or_name
+
+
+models = RegisteredModels()
+
+
+class DbConnection:
+    def __init__(self):
+        self.session = Session()
+        self.created_at = datetime.datetime.now()
+        self._within_transaction = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_value:
+            self.session.rollback()
+        self.session.close()
+
+    @contextmanager
+    def transaction(self, do_commit=True, do_close=True):
+        """Enter the with block"""
+        assert (
+            self._within_transaction is False
+        ), "Attempt to start a transaction multiple times!"
+        self.begin()
+        try:
+            yield self
+        except:
+            self.rollback()
+            raise
+        else:
+            if do_commit:
+                self.commit()
+        finally:
+            self._within_transaction = False
+            if do_close:
+                self.close()
+        return self
+
+    def begin(self):
+        log.debug("begin new transaction")
+        self._within_transaction = True
+        # self.session.begin_nested()  # establish a savepoint
+
+    def _default_commit(self, do_commit):
+        if do_commit is None:
+            do_commit = False if self._within_transaction else True
+        return do_commit
+
+    def get_model(self, model_or_name):
+        return models.get_model(model_or_name)
+
+    def execute(self, clause, params=None, do_commit=None, **kwargs):
+        rv = self.session.execute(clause, params=params, **kwargs)
+        if self._default_commit(do_commit):
+            self.commit()
+        return rv
+
+    def commit(self):
+        """Store pending changes to the datbase"""
+        log.debug("commit changes to database")
+        self._within_transaction = False
+        self.session.commit()
+
+    def rollback(self):
+        """Store pending changes to the datbase"""
+        log.debug("rollback pending database changes")
+        self._within_transaction = False
+        self.session.rollback()
+
+    def close(self):
+        log.debug("close database session")
+        assert (
+            self._within_transaction is False
+        ), "About to close a transaction whithout rollback() or commit()"
+        self.session.close()
+
+    def create(self, model, attributes, do_commit=None):
+        """
+        CREATE
+        attributes is a dictionary with model column names and values.
+        """
+        # Create an instance of the class pathing in all the given attributes
+        if isinstance(model, str):
+            model = self.get_model(model)
+        # attributes = self._convert_db_file_objects(attributes)
+        new = model(**attributes)
+        self.add(new, do_commit=do_commit)
+        return new
+
+    def add(self, new, do_commit=None):
+        """
+        Store a model instance in the database.
+        """
+        self.session.add(new)
+        self.session.flush()
+        self.session.refresh(new)
+        if self._default_commit(do_commit):
+            self.commit()
+        return new
+
+    def merge(self, instance, do_commit=None):
+        """
+        Sync changes made to an instance back into the database.
+        """
+        self.session.merge(instance)
+        self.session.flush()
+        if self._default_commit(do_commit):
+            self.commit()
+        return instance
+
+    def detatch(self, instance):
+        self.session.expunge(instance)
+
+    def get(self, model, id_):
+        """
+        READ
+
+        Get a single model instance by its primary_key.
+        The given id_ can be a single value like and int or a tuple
+        of the values which represent the primary key.
+        """
+        model = self.get_model(model)
+        instance = self.session.query(model).get(id_)
+        if instance is None:
+            raise NotExists(f"{model.__tablename__} with id={id_} does not exist!")
+        return instance
+
+    def update(self, model, id_, attributes, do_commit=None):
+        """
+        UPDATE
+
+        attributes is a dictionary with table column names and values.
+        """
+        instance = self.get(model, id_)
+        attributes = self._convert_db_file_objects(attributes)
+        for name, value in attributes.items():
+            setattr(instance, name, value)
+        self.merge(instance, do_commit=do_commit)
+        return instance
+
+    def delete(self, model, id_, do_commit=None):
+        """
+        DELETE
+
+        Returns True if the db instance with the given ID was deleted.
+        False if it could not be found.
+        """
+        try:
+            instance = self.get(model, id_)
+        except NotExists:
+            return False
+        self.session.delete(instance)
+        if self._default_commit(do_commit):
+            self.commit()
+        return True
+
+    def query(
+        self, model, filters=None, offset=None, limit=None, order_by=None, reverse=False
+    ):
+        filters = filters or {}
+        model = self.get_model(model)
+        q = self.session.query(model)
+        for attr, value in filters.items():
+            if attr == "__filter__":
+                # The user provides and own filter statement
+                q = q.filter(value)
+            elif isinstance(value, (list, tuple)):
+                q = q.filter(getattr(model, attr).in_(value))
+            else:
+                q = q.filter(getattr(model, attr) == value)
+        if order_by:
+            if isinstance(order_by, (str, QueryableAttribute)):
+                order_by = [order_by]
+            for stmt in order_by:
+                if isinstance(stmt, str):
+                    stmt = self._get_attribute(stmt, model)
+                if reverse:
+                    stmt = desc(stmt)
+                q = q.order_by(stmt)
+        if offset:
+            q = q.offset(offset)
+        if limit:
+            q = q.limit(limit)
+        return q.all()
+
+    def query_one(self, model, filters):
+        found = self.query(model, filters, limit=1)
+        if found:
+            return found[0]
+        return None
+
+    def __del__(self):
+        """
+        Workaround for bug ticket #80022 - Queue Pool Error
+        Returning the session back to the pool when garbage collected.
+
+        """
+        try:
+            self.session.close()
+        except:
+            pass
+
+    def _get_attribute(self, text, model):
+        """Expecting string with "model.attrib". Searching the model by it's name and returning it's attribute"""
+        if "." in text:
+            name, text = text.split(".")
+            model = self.get_model(name.strip("'\""))
+        return getattr(model, text)
+
+    def _convert_db_file_objects(self, attributes):
+        conn = None
+        _attributes = {}
+        for attr, value in attributes.items():
+            if hasattr(value, "save"):
+                if conn is None:
+                    conn = self.session.connection()
+                lobject = conn.connection.lobject(0, "rw", 0)
+                value.save(lobject)
+                self.session.commit()
+                value = lobject.oid
+            _attributes[attr] = value
+        return _attributes
 
 
 class Database:
@@ -103,6 +354,7 @@ db = dbObject.ReturnScopedSession()
 # ===============================
 
 
+@models.register(writeable=False)
 class BaseMixin(object):
     """
     Some general Functionality for reusing
@@ -195,6 +447,7 @@ class BaseMixin(object):
 # ===========
 
 
+@models.register(writeable=True)
 class PersonalDetails(BaseMixin, Base):
     """DB Interaction for personal Details"""
 
@@ -232,6 +485,7 @@ class PaymentDetails(BaseMixin, Base):
 # ===========
 
 
+@models.register(writeable=True)
 class Expenses(BaseMixin, Base):
     """DB Interaction class for Expenses"""
 
@@ -276,6 +530,7 @@ class Expenses(BaseMixin, Base):
 # ===========
 
 
+@models.register(writeable=True)
 class Invoices_Item(BaseMixin, Base):
     """DB Interaction class for Invoices Items"""
 
@@ -378,6 +633,7 @@ class Invoices(BaseMixin, Base):
 # ===========
 
 
+@models.register(writeable=True)
 class Customers(BaseMixin, Base):
     """DB Interaction class for Customers"""
 
@@ -396,6 +652,7 @@ class Customers(BaseMixin, Base):
 # ===========
 
 
+@models.register(writeable=True)
 class Agencys(BaseMixin, Base):
     """DB Interaction class for Agencys"""
 
@@ -408,6 +665,7 @@ class Agencys(BaseMixin, Base):
 # ===========
 
 
+@models.register(writeable=True)
 class Jobtypes(BaseMixin, Base):
     """DB Interaction class for Jobtypes"""
 

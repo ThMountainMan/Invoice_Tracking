@@ -1,5 +1,6 @@
 from bottle import redirect, request, route, static_file, template
 import database as DB
+from database import DbConnection
 from dateutil import parser
 import export
 import logging
