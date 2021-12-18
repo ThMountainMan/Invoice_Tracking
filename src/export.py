@@ -4,7 +4,7 @@ Export the Data to several ouputs
 
 import pdfkit
 import os
-from app_config import AppConfig
+from config import appconfig as AppConfig
 import logging
 
 log = logging.getLogger(__name__)

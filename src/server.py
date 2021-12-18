@@ -9,7 +9,7 @@ import threading
 import bottle
 from gevent import monkey
 
-from app_config import AppConfig
+from config import appconfig as AppConfig
 
 # Apply GEVENT patches to bottle server to enable asynchronous functionality
 monkey.patch_all()

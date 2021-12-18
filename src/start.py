@@ -7,35 +7,40 @@ Startup script for the Invoice Tracker Webservice
 
 import logging
 import os
-import site
+
+# import site
 import sys
 
-import server
-import web
-from app_config import AppConfig
+from config import read_config, write_config, appconfig
 
 FORMAT = "[%(levelname)-5s] %(name)-20s %(message)s"
 
 THISDIR = os.path.dirname(__file__)
 SVC_NAME = "Invoice_Tracker"
 SVC_DISPLAY_NAME = f"_{SVC_NAME}"
-DEFAULT_CFG = os.path.abspath(os.path.join(THISDIR, "config.yml"))
+DEFAULT_CFG = os.path.abspath(os.path.join(THISDIR, "config.yaml"))
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format=FORMAT)
 
 log = logging.getLogger()
 
 # Only for debug. We add additional search pathes to external packages
-site.addsitedir(os.path.abspath(os.path.join(THISDIR, "..", ".debug")))
+# site.addsitedir(os.path.abspath(os.path.join(THISDIR, "..", ".debug")))
 
 
 def main(config_file=DEFAULT_CFG, blocking=True, argv=None):
     if os.path.exists(config_file):
         log.info("Read config file: %s", config_file)
-        # read_config(config_file)
+        read_config(config_file)
+
+        import database
+        import server
+        import web
+
+        database.init()
     else:
         log.info("Create default config file: %s", config_file)
-        AppConfig._createdefault()
+        write_config(config_file)
         sys.exit(f"Config file {config_file} created!")
 
     # Init the Logger Functionality

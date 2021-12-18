@@ -3,26 +3,12 @@
 
 import logging
 import os
-from os.path import abspath, dirname
 
 import bottle
-import database as DB
-
-import pandas as pd
-from app_config import AppConfig
+from config import appconfig as AppConfig
 from bottle import redirect, request, route, static_file, template
-from dateutil import parser
-
-from . import process_form_data as fData
 
 log = logging.getLogger(__name__)
-
-
-# Add the Template Path to bottle
-# This is done to run the Scrip on Linux as well
-bottle.TEMPLATE_PATH.insert(
-    0, os.path.join(dirname(dirname(abspath(__file__))), "views")
-)
 
 
 # =========================================

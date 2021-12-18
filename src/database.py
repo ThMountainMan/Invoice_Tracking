@@ -2,22 +2,52 @@
 
 import logging
 import os
+from contextlib import contextmanager
 from datetime import datetime
 
 import sqlalchemy
-from sqlalchemy import FLOAT, JSON, VARCHAR, Column, Date, ForeignKey, Integer, extract
+from sqlalchemy import (
+    FLOAT,
+    JSON,
+    VARCHAR,
+    Column,
+    Date,
+    ForeignKey,
+    Integer,
+    create_engine,
+    extract,
+)
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import relationship, scoped_session, sessionmaker
-from contextlib import contextmanager
 
-from app_config import AppConfig
+# from app_config import AppConfig
+from config import appconfig
 from db_migration import migration
+
+# TODO: This can be deleted once the integration is finished
+AppConfig = appconfig
 
 # Init the Logger
 log = logging.getLogger(__name__)
 
 Base = declarative_base()
 Session = sessionmaker()
+
+
+def init(config=appconfig, create=False):
+    log.info("enable sql echo logging (debug)")
+
+    url = f"sqlite:///{config.path}//{config.db_name}.db?charset=utf8"
+    engine = create_engine(url, echo=config.echo)
+    log.info("connect to database %s", engine.url)
+
+    if create:
+        log.info("create database based on the modelling")
+        Base.metadata.create_all(engine)
+    Session.configure(bind=engine)
+
+
+#     check_database_version_and_update()
 
 
 class NotExists(Exception):
