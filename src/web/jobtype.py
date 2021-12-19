@@ -1,7 +1,6 @@
-from bottle import redirect, request, route, static_file, template
-import database as DB
+from bottle import redirect, request, route, get, template, response, post
+from database import DbConnection, Jobtypes
 from dateutil import parser
-import export
 import logging
 
 log = logging.getLogger(__name__)
@@ -11,53 +10,39 @@ log = logging.getLogger(__name__)
 # =========================================
 
 
-@route("/jobtypes")
-def jobtypes():
-    print("Jobtypes ...")
-    Data = DB.Jobtypes.get_all()
-
-    for i in Data:
-        print(i.name)
-
-    return template("jobtypes.tpl", input=Data)
+@get("/jobtypes")
+def expenses():
+    with DbConnection() as db:
+        data = db.query("jobtypes")
+    return template("jobtypes.tpl", input=data)
 
 
-@route("/jobtype_add")
-@route("/jobtype_add", method="POST")
-@route("/jobtype_edit/<id>")
-@route("/jobtype_edit/<id>", method="POST")
-def jobtype_edit(id=None):
-    # Check what kind of request has beeing made
-    # We can either update or create a new entry
-    # The decission is made besed on the ID
-    if request.method == "POST":
-        # Receive the HTML form data as dictionary
-        Data = request.forms
-        # Prepare the Data for DB input
-        # decide if we want to update or to creates
-        if id:
-            # We want to update an existion entry
-            # Send the new data to the Database
-            DB.Jobtypes.update(id, fData.process_update_data_Jobtype(Data))
+@post("/jobtypes/edit")
+def expense_edit():
+    try:
+        with DbConnection() as db:
+            id = request.POST.get("id")
+            # Get the expense we want to edit
+            if request.POST["action"] == "edit":
+                jobtype = db.get("jobtypes", id) if id else Jobtypes()
+            # delete the selected expense
+            elif request.POST["action"] == "delete":
+                db.delete("jobtypes", id)
+                return {"success": True}
+            # TODO: How doe we rollback properly ?
+            elif request.POST["action"] == "restore":
+                db.rollback()
+                return {"success": True}
+            # Collect the Form Data
+            form_data = request.forms
+            # Create or Update the Jobtypes
+            jobtype.name = form_data.get("name")
 
-        else:
-            # We want to create a new DB entry
-            new = DB.Jobtypes(name=Data.get("name").encode("iso-8859-1"))
-            # Send the new data to the Database
-            DB.Jobtypes.create(new)
-
-        # get back to the overview
-        redirect("/jobtypes")
-
-    # If the reueast was to edit an agency
-    else:
-        Data = DB.Jobtypes.get(id) if id else None
-        # Return the template with the DB data
-        return template("jobtypes_edit.tpl", jobtype=Data)
-
-
-@route("/jobtype_delete/<id>")
-def jobtype_delete(id=None):
-    print(f"Deleting Jobtype with ID : {id}")
-    DB.Jobtypes.delete(id)
-    redirect("/jobtypes")
+            if jobtype.id:
+                db.merge(jobtype)
+            else:
+                db.add(jobtype)
+            return {"success": True}
+    except Exception as e:
+        response.status = 400
+        return str(e)

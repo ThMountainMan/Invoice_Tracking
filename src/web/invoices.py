@@ -1,5 +1,5 @@
-from bottle import redirect, request, route, static_file, template
-import database as DB
+from bottle import redirect, request, route, static_file, template, get
+from database import DbConnection
 from dateutil import parser
 import export
 import logging
@@ -12,31 +12,60 @@ log = logging.getLogger(__name__)
 # =========================================
 
 
-@route("/invoices/<year>")
-@route("/invoices")
 @route("/")
+@get("/invoices")
+@get("/invoices/<year>")
 def invoices(year=None):
-    # If there is a year specified, get all invoices for this years
-    Data = DB.Invoices.get_all(year)
-    # Get all expenses for the selected year
-    Expenses = DB.Expenses.get_all(year)
-    # Get all available Jobtypes ( for the filter )
-    jobtypes = DB.Jobtypes.get_all()
+    with DbConnection() as db:
+        if year:
+            data = [res for res in db.query("invoices") if res.date.year == int(year)]
+        else:
+            data = db.query("invoices")
+        jobtypes = db.query("jobtypes")
+        expenses = db.query("expenses")
 
-    # Calculations for the income overview
-    income = sum(res.get_ammount()["sum_mwst"] for res in Data if res.paydate)
-    outstanding = sum(res.get_ammount()["sum_mwst"] for res in Data if not res.paydate)
+        # Calculations for the income overview
+        income = sum(res.get_ammount()["sum_mwst"] for res in data if res.paydate)
+        outstanding = sum(
+            res.get_ammount()["sum_mwst"] for res in data if not res.paydate
+        )
 
-    expenses = sum(res.cost for res in Expenses)
-    dOverview = {
-        "income": round(income, 2),
-        "outstanding": round(outstanding, 2),
-        "expenses": round(expenses, 2),
-        "profit": round(income - expenses, 2),
-    }
+        expenses = sum(res.cost for res in expenses)
+        dOverview = {
+            "income": round(income, 2),
+            "outstanding": round(outstanding, 2),
+            "expenses": round(expenses, 2),
+            "profit": round(income - expenses, 2),
+        }
 
-    # Return the template with the defined data
-    return template("invoices.tpl", overview=dOverview, input=Data, jobtypes=jobtypes)
+    return template("invoicesV2.tpl", overview=dOverview, input=data, jobtypes=jobtypes)
+
+
+# @route("/invoices/<year>")
+# @route("/invoices")
+# @route("/")
+# def invoices(year=None):
+#     # If there is a year specified, get all invoices for this years
+#     Data = DB.Invoices.get_all(year)
+#     # Get all expenses for the selected year
+#     Expenses = DB.Expenses.get_all(year)
+#     # Get all available Jobtypes ( for the filter )
+#     jobtypes = DB.Jobtypes.get_all()
+
+#     # Calculations for the income overview
+#     income = sum(res.get_ammount()["sum_mwst"] for res in Data if res.paydate)
+#     outstanding = sum(res.get_ammount()["sum_mwst"] for res in Data if not res.paydate)
+
+#     expenses = sum(res.cost for res in Expenses)
+#     dOverview = {
+#         "income": round(income, 2),
+#         "outstanding": round(outstanding, 2),
+#         "expenses": round(expenses, 2),
+#         "profit": round(income - expenses, 2),
+#     }
+
+#     # Return the template with the defined data
+#     return template("invoices.tpl", overview=dOverview, input=Data, jobtypes=jobtypes)
 
 
 @route("/invoice_show/<id>", method=["POST", "GET"])

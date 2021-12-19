@@ -1,23 +1,21 @@
-% setdefault('title', 'Projects')
-<!-- % rebase('base.tpl') -->
+% setdefault('title', 'Expenses')
 %include("base.tpl")
-<div class="row col-md-8 col-md-offset-2">
+<div class="container-fluid">
   <div class="panel panel-default">
     <div class="panel-heading">
-      <h3 class="panel-title">
+      <h1 class="panel-title">
         {{title}}
-      </h3>
+      </h1>
     </div>
     <div class="panel-body">
       <div class="clearfix">
-        <button class="btn btn-primary btn-sm pull-right" id="addRow">Add Row</button>
-        <button type="button" class="btn btn-primary btn-sm pull-right page-reload"
-          style="margin-right:20px;">Reload</button>
+        <button class="btn btn-primary" id="addRow">Add Row</button>
+        <button type="button" class="btn btn-primary" style="margin-right:20px;">Reload</button>
       </div>
       <br />
 
-      <table class="table table-striped table-bordered table-hover" id="tableedit">
-        <thead>
+      <table class="table table-hover" id="tableedit">
+        <thead class="thead-light">
           <tr>
             <th>ID</th>
             <th>Date</th>
@@ -85,4 +83,5 @@
     clone.prependTo("table");
 
   });
+
 </script>

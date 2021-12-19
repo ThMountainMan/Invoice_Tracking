@@ -481,9 +481,12 @@ class PersonalDetails(BaseMixin, Base):
     taxnumber = Column(VARCHAR)
 
     payment_id = Column(Integer, ForeignKey("paymentdetails.id"))
-    payment_details = relationship("PaymentDetails", foreign_keys=[payment_id])
+    payment_details = relationship(
+        "PaymentDetails", foreign_keys=[payment_id], lazy=False
+    )
 
 
+@models.register(editable=True)
 class PaymentDetails(BaseMixin, Base):
     """DB Interaction for payment Details"""
 
@@ -493,6 +496,9 @@ class PaymentDetails(BaseMixin, Base):
     bank = Column(VARCHAR)
     IBAN = Column(VARCHAR)
     BIC = Column(VARCHAR)
+
+    def __str__(self):
+        return str(self.label.decode("utf-8"))
 
 
 # ===========
@@ -531,19 +537,6 @@ class Expenses(BaseMixin, Base):
 
         return f"{new_year}-{new_id:03}"
 
-    @classmethod
-    def get_all(cls, year=None):
-        session = Session()
-        if year:
-            # Return DB entrys filterd by year
-
-            return (
-                session.query(cls).filter(extract("year", cls.date) == int(year)).all()
-            )
-        else:
-            # Return all entrys in the DB
-            return session.query(cls).all()
-
 
 # ===========
 # INVOICES
@@ -562,6 +555,7 @@ class Invoices_Item(BaseMixin, Base):
     parent = relationship("Invoices", foreign_keys=[parent_id])
 
 
+@models.register(editable=True)
 class Invoices(BaseMixin, Base):
     """DB Interaction class for Invoices"""
 
@@ -579,14 +573,15 @@ class Invoices(BaseMixin, Base):
     personal_id = Column(Integer, ForeignKey("personaldetails.id"))
 
     items = relationship("Invoices_Item")
-    customer = relationship("Customers", foreign_keys=[customer_id])
-    jobtype = relationship("Jobtypes", foreign_keys=[jobcode_id])
-    agency = relationship("Agencys", foreign_keys=[agency_id])
-    personal = relationship("PersonalDetails", foreign_keys=[personal_id])
+    customer = relationship("Customers", foreign_keys=[customer_id], lazy=False)
+    jobtype = relationship("Jobtypes", foreign_keys=[jobcode_id], lazy=False)
+    agency = relationship("Agencys", foreign_keys=[agency_id], lazy=False)
+    personal = relationship("PersonalDetails", foreign_keys=[personal_id], lazy=False)
 
     @classmethod
     def get_latest_id(cls):
-        obj = db.query(cls).order_by(cls.id.desc()).first()
+        session = Session()
+        obj = session.query(cls).order_by(cls.id.desc()).first()
         if not obj:
             return f"{datetime.now().year}-{1:03}"
         # Split the String
@@ -607,21 +602,16 @@ class Invoices(BaseMixin, Base):
 
     @classmethod
     def get_latest_invoice_id(cls):
-        obj = db.query(cls).order_by(cls.id.desc()).first()
-
-    @classmethod
-    def get_all(cls, year=None):
-        if year:
-            # Return DB entrys filterd by year
-            return db.query(cls).filter(extract("year", cls.date) == int(year)).all()
-        else:
-            # Return all entrys in the DB
-            return db.query(cls).all()
+        session = Session()
+        obj = session.query(cls).order_by(cls.id.desc()).first()
 
     def get_ammount(self):
+        session = Session()
         # ToDo: Generate function to return all incoive items
         _items = (
-            db.query(Invoices_Item).filter(Invoices_Item.parent_id == self.id).all()
+            session.query(Invoices_Item)
+            .filter(Invoices_Item.parent_id == self.id)
+            .all()
         )
         sum = 0
         mwst = 0
@@ -645,7 +635,12 @@ class Invoices(BaseMixin, Base):
         return _dict
 
     def get_items(self):
-        return db.query(Invoices_Item).filter(Invoices_Item.parent_id == self.id).all()
+        session = Session()
+        return (
+            session.query(Invoices_Item)
+            .filter(Invoices_Item.parent_id == self.id)
+            .all()
+        )
 
 
 # ===========

@@ -1,9 +1,8 @@
-from bottle import redirect, request, route, static_file, template
-import database as DB
-from dateutil import parser
-import export
 import logging
-from . import process_form_data as fData
+
+from bottle import get, post, request, response, template
+from database import DbConnection, PaymentDetails, PersonalDetails
+import json
 
 log = logging.getLogger(__name__)
 
@@ -13,64 +12,56 @@ log = logging.getLogger(__name__)
 # =========================================
 
 
-@route("/personal")
-def personals():
-    print("Customer ...")
-    Data = DB.PersonalDetails.get_all()
-    return template("personal.tpl", input=Data)
+@get("/personal")
+def personal():
+    with DbConnection() as db:
+        data = db.query("personaldetails")
+        payment_data = db.query("paymentdetails")
+
+        payment_options = {0: "-"}
+        payment_options.update({p.id: str(p) for p in payment_data})
+        payment_options = json.dumps([[p] for i, p in payment_options.items()])
+
+    return template("personal.tpl", input=data, payment_options=payment_options)
 
 
-@route("/personal_add")
-@route("/personal_add", method="POST")
-@route("/personal_edit/<id>")
-@route("/personal_edit/<id>", method="POST")
-def personal_edit(id=None):
-    # Check what kind of request has beeing made
-    # We can either update or create a new entry
-    # The decission is made besed on the ID
-    if request.method == "POST":
-        # Receive the HTML form data as dictionary
-        Data = request.forms
-        # Prepare the Data for DB input
-        # decide if we want to update or to create
-        if id:
-            # We want to update an existion entry
-            # Send the new data to the Database
-            DB.PersonalDetails.update(id, fData.process_update_data_PersonalData(Data))
+@post("/personal/edit")
+def personal_edit():
+    try:
+        with DbConnection() as db:
+            id = request.POST.get("id")
+            # Get the expense we want to edit
+            if request.POST["action"] == "edit":
+                personal = db.get("personaldetails", id) if id else PersonalDetails()
+            # delete the selected expense
+            elif request.POST["action"] == "delete":
+                db.delete("personaldetails", id)
+                return {"success": True}
+            # TODO: How doe we rollback properly ?
+            elif request.POST["action"] == "restore":
+                db.rollback()
+                return {"success": True}
+            # Collect the Form Data
+            form_data = request.forms
+            # Create or Update the agency
+            personal.label = form_data.get("label").encode("iso-8859-1")
+            personal.name = form_data.get("name").encode("iso-8859-1")
+            personal.street = form_data.get("street").encode("iso-8859-1")
+            personal.postcode = form_data.get("postcode")
+            personal.city = form_data.get("city").encode("iso-8859-1")
+            personal.mail = form_data.get("mail").encode("iso-8859-1")
+            personal.phone = form_data.get("phone")
+            personal.payment_id = form_data.get("payment_id")
+            personal.taxnumber = form_data.get("taxnumber")
 
-        else:
-            # We want to create a new DB entry
-            new = DB.PersonalDetails(
-                label=Data.get("label").encode("iso-8859-1"),
-                name_company=Data.get("company_name").encode("iso-8859-1"),
-                name=Data.get("name").encode("iso-8859-1"),
-                street=Data.get("street").encode("iso-8859-1"),
-                postcode=Data.get("postcode"),
-                city=Data.get("city").encode("iso-8859-1"),
-                mail=Data.get("mail"),
-                phone=Data.get("phone"),
-                payment_id=Data.get("payment_details"),
-                taxnumber=Data.get("taxnumber"),
-            )
-            # Send the new data to the Database
-            DB.PersonalDetails.create(new)
-
-        # get back to the overview
-        redirect("/personal")
-
-    # If the reueast was to edit an agency
-    else:
-        Data = DB.PersonalDetails.get(id) if id else None
-        payment = DB.PaymentDetails.get_all()
-        # Return the template with the DB data
-        return template("personal_edit.tpl", data=Data, payment=payment)
-
-
-@route("/personal_delete/<id>")
-def personal_delete(id=None):
-    print(f"Deleting expense with ID : {id}")
-    DB.PersonalDetails.delete(id)
-    redirect("/personal")
+            if personal.id:
+                db.merge(personal)
+            else:
+                db.add(personal)
+            return {"success": True}
+    except Exception as e:
+        response.status = 400
+        return str(e)
 
 
 # =========================================
@@ -78,55 +69,44 @@ def personal_delete(id=None):
 # =========================================
 
 
-@route("/payment")
-def payments():
-    print("Customer ...")
-    Data = DB.PaymentDetails.get_all()
-    return template("payment.tpl", input=Data)
+@get("/payment")
+def payment():
+    with DbConnection() as db:
+        data = db.query("payment")
+    return template("payment.tpl", input=data)
 
 
-@route("/payment_add")
-@route("/payment_add", method="POST")
-@route("/payment_edit/<id>")
-@route("/payment_edit/<id>", method="POST")
-def payment_edit(id=None):
-    # Check what kind of request has beeing made
-    # We can either update or create a new entry
-    # The decission is made besed on the ID
-    if request.method == "POST":
-        # Receive the HTML form data as dictionary
-        Data = request.forms
-        # Prepare the Data for DB input
-        # decide if we want to update or to create
-        if id:
-            # We want to update an existion entry
-            # Send the new data to the Database
-            DB.PaymentDetails.update(id, fData.process_update_data_PaymentDetails(Data))
-
-        else:
-            # We want to create a new DB entry
-            new = DB.PaymentDetails(
-                label=Data.get("label").encode("iso-8859-1"),
-                name=Data.get("name").encode("iso-8859-1"),
-                bank=Data.get("bank").encode("iso-8859-1"),
-                IBAN=Data.get("IBAN"),
-                BIC=Data.get("BIC"),
-            )
-            # Send the new data to the Database
-            DB.PaymentDetails.create(new)
-
-        # get back to the overview
-        redirect("/payment")
-
-    # If the reueast was to edit an agency
-    else:
-        Data = DB.PaymentDetails.get(id) if id else None
-        # Return the template with the DB data
-        return template("payment_edit.tpl", data=Data)
-
-
-@route("/payment_delete/<id>")
-def payment_delete(id=None):
-    print(f"Deleting Payment Details with ID : {id}")
-    DB.PaymentDetails.delete(id)
-    redirect("/payment")
+@post("/payment/edit")
+def payment_edit():
+    try:
+        with DbConnection() as db:
+            id = request.POST.get("id")
+            # Get the expense we want to edit
+            if request.POST["action"] == "edit":
+                paymentdetails = (
+                    db.get("paymentdetails", id) if id else PaymentDetails()
+                )
+            # delete the selected expense
+            elif request.POST["action"] == "delete":
+                db.delete("paymentdetails", id)
+                return {"success": True}
+            # TODO: How doe we rollback properly ?
+            elif request.POST["action"] == "restore":
+                db.rollback()
+                return {"success": True}
+            # Collect the Form Data
+            form_data = request.forms
+            # Create or Update the agency
+            paymentdetails.label = form_data.get("label").encode("iso-8859-1")
+            paymentdetails.name = form_data.get("name").encode("iso-8859-1")
+            paymentdetails.bank = form_data.get("bank").encode("iso-8859-1")
+            paymentdetails.IBAN = form_data.get("IBAN")
+            paymentdetails.BIC = form_data.get("BIC")
+            if personal.id:
+                db.merge(personal)
+            else:
+                db.add(personal)
+            return {"success": True}
+    except Exception as e:
+        response.status = 400
+        return str(e)

@@ -1,49 +1,81 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
+% setdefault('title', 'Agencys')
+%include("base.tpl")
+<div class="container-fluid">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h1 class="panel-title">
+        {{title}}
+      </h1>
+    </div>
+    <div class="panel-body">
+      <div class="clearfix">
+        <button class="btn btn-primary" id="addRow">Add Row</button>
+        <button type="button" class="btn btn-primary" style="margin-right:20px;">Reload</button>
+      </div>
+      <br />
 
-<head>
-  <meta charset="utf-8">
-  <title>CCC Tracker</title>
-  <style>
-
-  </style>
-
-  % include('base.tpl')
-</head>
-
-<body>
-
-  <header>
-    <div class="container-fluid">
-      <h1 class="logo">Agencys</h1>
-      <br><a href="/agency_add" class="btn btn-primary"> Create New Agency </a><br><br>
-      <table class=" table">
+      <table class="table table-hover" id="tableedit">
         <thead class="thead-light">
           <tr>
             <th>#</th>
             <th>Name</th>
             <th>Percentage</th>
-            <th>EDIT</th>
-
           </tr>
         </thead>
-        % for agency in input:
-        <tr>
-          <td>{{agency.id}}</td>
-          <td>{{agency.name}}</td>
-          <td>{{agency.percentage}}</td>
-          <td>
-            <button onclick="location.href = '/agency_edit/{{agency.id}}';" type="button" class="btn btn-warning btn-sm">EDIT</button>
-            <button onclick="location.href = '/agency_delete/{{agency.id}}';" type="button" class="btn btn-danger btn-sm">DELETE</button>
-          </td>
-        </tr>
-        % end
+        <tbody>
+          <tr class="tableedit-template" style="display: none;">
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          % for agency in input:
+          <tr>
+            <td>{{agency.id}}</td>
+            <td>{{agency.name}}</td>
+            <td>{{agency.percentage}}</td>
+          </tr>
+          % end
+        </tbody>
+      </table>
+
+    </div> <!-- /.panel-body -->
+  </div> <!-- /.panel -->
+</div> <!-- row -->
 
 
-    </div>
-  </header>
+<script type="text/javascript">
+  $('#tableedit').Tabledit({
+    url: '/agencys/edit',
+    restoreButton: true,
+    columns: {
+      identifier: [0, 'id'],
+      editable: [[1, 'name'],
+      [2, 'percentage']
+      ]
+    },
 
+    onSuccess: function (data, textStatus, jqXHR, lastEditedRow) {
+      if (data.new_id) {
+        lastEditedRow.attr('id', data.new_id);
+        lastEditedRow.find('span.tabledit-span.tabledit-identifier').text(data.new_id);
+        lastEditedRow.find('input.tabledit-input.tabledit-identifier').attr('value', data.new_id);
+      }
+    },
+    onFail: function (jqXHR, textStatus, errorThrown) {
+      console.log('onFail(jqXHR, textStatus, errorThrown)');
+      console.log(jqXHR);
+      console.log(textStatus);
+      console.log(errorThrown);
+      alert(jqXHR.responseText);
+    }
+  });
 
-</body>
+  $("#addRow").click(function () {
+    var clone = $(".tableedit-template").first().clone();
+    clone.show();
+    clone.removeAttr("class");
+    clone.prependTo("table");
 
-</html>
+  });
+
+</script>

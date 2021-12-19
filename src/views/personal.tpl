@@ -1,62 +1,119 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
+% setdefault('title', 'Personal Details')
+%include("base.tpl")
+<div class="container-fluid">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h1 class="panel-title">
+        {{title}}
+      </h1>
+    </div>
+    <div class="panel-body">
+      <div class="clearfix">
+        <button class="btn btn-primary" id="addRow">Add Row</button>
+        <button type="button" class="btn btn-primary"
+          style="margin-right:20px;">Reload</button>
+      </div>
+      <br />
 
-<head>
-  <meta charset="utf-8">
-  <title>CCC Tracker</title>
-  <style>
+      <table class="table table-hover" id="tableedit">
+        <thead class="thead-light">
+          <tr>
+            <td style="display:none;"></td>
+            <th>LABEL</th>
+            <th>Name</th>
+            <th>E-Mail</th>
+            <th>Phone</th>
+            <th>Street</th>
+            <th>Postcode</th>
+            <th>City</th>
+            <th>Tax#</th>
+            <th>Payment ID</th>
+            <th>Payment Details</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="tableedit-template" style="display: none;">
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+            % for data in input:
+            <tr>
+              <td style="display:none;">{{data.id}}</td>
+              <td><strong>{{data.label}}</strong></td>
+              <td>{{data.name}}</td>
+              <td>{{data.mail}}</td>
+              <td>{{data.phone}}</td>
+              <td>{{data.street}}</td>
+              <td>{{data.postcode}}</td>
+              <td>{{data.city}}</td>
+              <td>{{data.taxnumber}}</td>
+              <td>{{data.payment_details.label}}</td>
+              <td>
+                {{data.payment_details.name}}<br>
+                {{data.payment_details.bank}}<br>
+                {{data.payment_details.IBAN}}<br>
+                {{data.payment_details.BIC}}<br>
+              </td>
+          </tr>
+          % end
+        </tbody>
+      </table>
 
-  </style>
-</head>
-
-<body>
-  % include('base.tpl')
-
-  <div class="container-fluid">
-    <h1 class="logo">Personal Data</h1>
-    <br><a href="/personal_add" class="btn btn-primary"> Add New Company / Personal Data </a><br><br>
-    <table class=" table">
-      <thead class="thead-light">
-        <tr>
-          <th>LABEL</th>
-          <th>Name</th>
-          <th>Contact Details</th>
-          <th>Address</th>
-          <th>Payment Details</th>
-          <th>EDIT</th>
-        </tr>
-      </thead>
-      % for data in input:
-      <tr>
-        <td><strong>{{data.label}}</strong></td>
-        <td>{{data.name}}</td>
-        <td>
-          {{data.mail}}<br>
-          {{data.phone}}
-        </td>
-        <td>
-          {{data.street}}<br>
-          {{data.postcode}}<br>
-          {{data.city}}
-        </td>
-        <td>
-          {{data.payment_details.name}}<br>
-          {{data.payment_details.bank}}<br>
-          {{data.payment_details.IBAN}}<br>
-          {{data.payment_details.BIC}}<br>
-        </td>
-        <td>
-          <button onclick="location.href = '/personal_edit/{{data.id}}';" type="button" class="btn btn-warning btn-sm">EDIT</button>
-          <button onclick="location.href = '/personal_delete/{{data.id}}';" type="button" class="btn btn-danger btn-sm">DELETE</button>
-        </td>
-      </tr>
-      % end
-
-
-  </div>
+    </div> <!-- /.panel-body -->
+  </div> <!-- /.panel -->
+</div> <!-- row -->
 
 
 
-</body>
+<script type="text/javascript">
+  $('#tableedit').Tabledit({
+    url: '/personal/edit',
+    restoreButton: true,
+    columns: {
+      identifier: [0, 'id'],
+      editable: [[1, 'label'],
+        [2, 'name'],
+      [3, 'mail'],
+      [4, 'phone'],
+      [5, 'street'],
+      [6, 'postcode'],
+      [7, 'city'],
+      [8, 'taxnumber'],
+      [9, 'payment_id', '{{!payment_options}}']      
+      ]
+    },
 
-</html>
+    onSuccess: function (data, textStatus, jqXHR, lastEditedRow) {
+      if (data.new_id) {
+        lastEditedRow.attr('id', data.new_id);
+        lastEditedRow.find('span.tabledit-span.tabledit-identifier').text(data.new_id);
+        lastEditedRow.find('input.tabledit-input.tabledit-identifier').attr('value', data.new_id);
+      }
+    },
+    onFail: function (jqXHR, textStatus, errorThrown) {
+      console.log('onFail(jqXHR, textStatus, errorThrown)');
+      console.log(jqXHR);
+      console.log(textStatus);
+      console.log(errorThrown);
+      alert(jqXHR.responseText);
+    }
+  });
+
+  $("#addRow").click(function () {
+    var clone = $(".tableedit-template").first().clone();
+    clone.show();
+    clone.removeAttr("class");
+    clone.prependTo("table");
+
+  });
+
+</script>

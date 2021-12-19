@@ -1,7 +1,5 @@
-from bottle import redirect, request, route, static_file, template
-import database as DB
-from dateutil import parser
-import export
+from bottle import redirect, request, route, template, post, response, get
+from database import DbConnection, Agencys
 import logging
 
 log = logging.getLogger(__name__)
@@ -12,55 +10,40 @@ log = logging.getLogger(__name__)
 # =========================================
 
 
-@route("/agencys")
-def agencys():
-    print("Agencys ...")
-    Data = DB.Agencys.get_all()
-    return template("agencys.tpl", input=Data)
+@get("/agencys")
+def expenses():
+    with DbConnection() as db:
+        data = db.query("agencys")
+    return template("agencys.tpl", input=data)
 
 
-@route("/agency_add")
-@route("/agency_add", method="POST")
-@route("/agency_edit/<id>")
-@route("/agency_edit/<id>", method="POST")
-def agency_edit(id=None):
-    # Check what kind of request has beeing made
-    # We can either update or create a new entry
-    # The decission is made besed on the ID
-    if request.method == "POST":
-        # Receive the HTML form data as dictionary
-        Data = request.forms
-        # Prepare the Data for DB input
-        # decide if we want to update or to create
-        if id:
-            # We want to update an existion entry
-            # Send the new data to the Database
-            DB.Agencys.update(id, fData.process_update_data_Agency(Data))
-
-        else:
-            # We want to create a new DB entry
-            new = DB.Agencys(
-                name=Data.get("name").encode("iso-8859-1"),
-                percentage=Data.get("percentage"),
-            )
-            DB.Agencys.create(new)
-
-        # get back to the overview
-        redirect("/agencys")
-
-    # If the reueast was to edit an agency
-    else:
-        Data = DB.Agencys.get(id) if id else None
-        # Return the template with the DB data
-        return template("agencys_edit.tpl", agency=Data)
-
-
-@route("/agency_delete/<id>")
-def agency_delete(id=None):
-    print(f"Deleting Agency with ID : {id}")
+@post("/agencys/edit")
+def expense_edit():
     try:
-        DB.Agencys.delete(id)
-    except Exception:
-        pass
-    finally:
-        redirect("/agencys")
+        with DbConnection() as db:
+            id = request.POST.get("id")
+            # Get the expense we want to edit
+            if request.POST["action"] == "edit":
+                agency = db.get("agencys", id) if id else Agencys()
+            # delete the selected expense
+            elif request.POST["action"] == "delete":
+                db.delete("agencys", id)
+                return {"success": True}
+            # TODO: How doe we rollback properly ?
+            elif request.POST["action"] == "restore":
+                db.rollback()
+                return {"success": True}
+            # Collect the Form Data
+            form_data = request.forms
+            # Create or Update the agency
+            agency.name = form_data.get("name")
+            agency.percentage = form_data.get("percentage")
+
+            if agency.id:
+                db.merge(agency)
+            else:
+                db.add(agency)
+            return {"success": True}
+    except Exception as e:
+        response.status = 400
+        return str(e)
