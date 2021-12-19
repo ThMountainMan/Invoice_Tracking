@@ -6,7 +6,8 @@ import globconf
 log = logging.getLogger(__name__)
 
 
-def current_dir(*names):
+def root_dir(*names):
+    """Get the Current Directory"""
     return os.path.abspath(os.path.join(__file__, "../..", *names))
 
 
@@ -22,11 +23,12 @@ class AppConfig(globconf.Config):
     local = True
 
     # Define the Path for the HTML to PDF Converter
-    pfd_creator = current_dir("recources\\wkhtmltopdf\\bin\\wkhtmltopdf.exe")
+    pfd_creator = root_dir("recources\\wkhtmltopdf\\bin\\wkhtmltopdf.exe")
     tempdir = None
     # database
     # Settings if we want to connect to a remote DB
-    db_path = None
+    db_path = root_dir("src", "db")
+    db_migration = root_dir("src", "db_migration")
     # ( only valid if use_local = False )
     db_ip = "192.168.178.71"
     db_port = "3307"
@@ -41,7 +43,7 @@ class AppConfig(globconf.Config):
 
     # invoices
     # Settings related to the webserver
-    path = current_dir("src")
+    path = root_dir("src")
 
 
 def read_config(path):

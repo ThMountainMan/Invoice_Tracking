@@ -10,7 +10,7 @@
 .vscode/
 .venv/
 
-static/
+
 _test/
 scripts/
 documentation/

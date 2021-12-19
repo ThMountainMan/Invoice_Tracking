@@ -17,8 +17,9 @@ from sqlalchemy import (
     create_engine,
     extract,
 )
+from sqlalchemy.orm.attributes import QueryableAttribute
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
-from sqlalchemy.orm import relationship, scoped_session, sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker
 
 # from app_config import AppConfig
 from config import appconfig
@@ -35,51 +36,54 @@ Session = sessionmaker()
 
 
 def init(config=appconfig, create=False):
-    log.info("enable sql echo logging (debug)")
 
-    url = f"sqlite:///{config.path}//{config.db_name}.db?charset=utf8"
+    if appconfig.debug:
+        log.info("enable sql echo logging (debug)")
+    url = f"sqlite:///{config.db_path}\\{config.db_name}.db"
+
+    # Run the DB Migration if needed
+    migration.run_migrations(script_location=appconfig.db_migration, dsn=url)
+
     engine = create_engine(url, echo=config.echo)
     log.info("connect to database %s", engine.url)
-
     if create:
         log.info("create database based on the modelling")
         Base.metadata.create_all(engine)
     Session.configure(bind=engine)
 
 
-#     check_database_version_and_update()
-
-
 class NotExists(Exception):
-    """Is raised if a database instance could not be found"""
+    """Failure Class for catching errors"""
 
 
-class RegisteredModels(dict):
-    def register(self, writeable=True, admin_only=False):
+class AvailableDBModels(dict):
+    def register(self, editable=True, admin_rights=False):
         def _register(cls):
             self[cls.__tablename__] = cls
-            cls._writeable = writeable
-            cls._admin_only = admin_only
+            cls._editable = editable
+            cls._admin_rights = admin_rights
             return cls
 
         return _register
 
-    def get_model(self, model_or_name):
-        if isinstance(model_or_name, str):
+    def get_model(self, model):
+        if isinstance(model, str):
             try:
-                return self[model_or_name]
+                return self[model]
             except KeyError:
-                raise NotExists(f"No database model with name {model_or_name} found!")
-        return model_or_name
+                raise NotExists(
+                    f"Not able to find corrosponding model for :  {model} !"
+                )
+        return model
 
 
-models = RegisteredModels()
+models = AvailableDBModels()
 
 
 class DbConnection:
     def __init__(self):
         self.session = Session()
-        self.created_at = datetime.datetime.now()
+        self.created_at = datetime.now()
         self._within_transaction = False
 
     def __enter__(self):
@@ -112,7 +116,7 @@ class DbConnection:
         return self
 
     def begin(self):
-        log.debug("begin new transaction")
+        log.debug("start a new transaction")
         self._within_transaction = True
         # self.session.begin_nested()  # establish a savepoint
 
@@ -132,7 +136,7 @@ class DbConnection:
 
     def commit(self):
         """Store pending changes to the datbase"""
-        log.debug("commit changes to database")
+        log.debug("committing changes to database")
         self._within_transaction = False
         self.session.commit()
 
@@ -186,34 +190,30 @@ class DbConnection:
     def detatch(self, instance):
         self.session.expunge(instance)
 
-    def get(self, model, id_):
+    def get(self, model, id):
         """
-        READ
-
-        Get a single model instance by its primary_key.
-        The given id_ can be a single value like and int or a tuple
-        of the values which represent the primary key.
+        READ DB entry
         """
         model = self.get_model(model)
-        instance = self.session.query(model).get(id_)
+        instance = self.session.query(model).get(id)
         if instance is None:
-            raise NotExists(f"{model.__tablename__} with id={id_} does not exist!")
+            raise NotExists(f"{model.__tablename__} with id={id} does not exist!")
         return instance
 
-    def update(self, model, id_, attributes, do_commit=None):
+    def update(self, model, id, attributes, do_commit=None):
         """
         UPDATE
 
         attributes is a dictionary with table column names and values.
         """
-        instance = self.get(model, id_)
+        instance = self.get(model, id)
         attributes = self._convert_db_file_objects(attributes)
         for name, value in attributes.items():
             setattr(instance, name, value)
         self.merge(instance, do_commit=do_commit)
         return instance
 
-    def delete(self, model, id_, do_commit=None):
+    def delete(self, model, id, do_commit=None):
         """
         DELETE
 
@@ -221,7 +221,7 @@ class DbConnection:
         False if it could not be found.
         """
         try:
-            instance = self.get(model, id_)
+            instance = self.get(model, id)
         except NotExists:
             return False
         self.session.delete(instance)
@@ -264,17 +264,6 @@ class DbConnection:
             return found[0]
         return None
 
-    def __del__(self):
-        """
-        Workaround for bug ticket #80022 - Queue Pool Error
-        Returning the session back to the pool when garbage collected.
-
-        """
-        try:
-            self.session.close()
-        except:
-            pass
-
     def _get_attribute(self, text, model):
         """Expecting string with "model.attrib". Searching the model by it's name and returning it's attribute"""
         if "." in text:
@@ -297,82 +286,78 @@ class DbConnection:
         return _attributes
 
 
-class Database:
-    def __init__(self, config):
-        # Create the connection engine
-        self.config = config
-        self._engine = sqlalchemy.create_engine(
-            self._CreateDbString(), echo=self.config.debug
-        )
-        self._session = sessionmaker(
-            bind=self._engine, autocommit=False, autoflush=False
-        )
-        # self._Session = self._session()
-        self._scoped_session = scoped_session(self._session)
+# class Database:
+#     def __init__(self, config):
+#         # Create the connection engine
+#         self.config = config
+#         self._engine = sqlalchemy.create_engine(
+#             self._CreateDbString(), echo=self.config.debug
+#         )
+#         self._session = sessionmaker(
+#             bind=self._engine, autocommit=False, autoflush=False
+#         )
+#         # self._Session = self._session()
+#         self._scoped_session = scoped_session(self._session)
 
-    def __enter__(self):
-        return self
+#     def __enter__(self):
+#         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
+#     def __exit__(self, exc_type, exc_val, exc_tb):
+#         self.close()
 
-    def _CreateDbString(self):
-        # In case we have a local DB File
-        if not self.config.local:
-            return f"mysql+pymysql://{self.config.db_user}:{self.config.db_pw}@{self.config.db_host}:{self.config.db_port}/{self.config.db_name}?charset=utf8"
+#     def _CreateDbString(self):
+#         # In case we have a local DB File
+#         if not self.config.local:
+#             return f"mysql+pymysql://{self.config.db_user}:{self.config.db_pw}@{self.config.db_host}:{self.config.db_port}/{self.config.db_name}?charset=utf8"
 
-        path = self.config.db_path
-        if not path:
-            cur_path = os.path.dirname(os.path.abspath(__file__))
-            path = os.path.join(cur_path, "db")
+#         path = self.config.db_path
+#         if not path:
+#             cur_path = os.path.dirname(os.path.abspath(__file__))
+#             path = os.path.join(cur_path, "db")
 
-        if not os.path.exists(path):
-            os.makedirs(path)
-        return f"sqlite:///{path}//{self.config.db_name}.db?charset=utf8"
+#         if not os.path.exists(path):
+#             os.makedirs(path)
+#         return f"sqlite:///{path}//{self.config.db_name}.db?charset=utf8"
 
-    @property
-    def connection(self):
-        self._conn = self._engine.connect()
-        return self._conn
+#     @property
+#     def connection(self):
+#         self._conn = self._engine.connect()
+#         return self._conn
 
-    @property
-    def engine(self):
-        return self._engine
+#     @property
+#     def engine(self):
+#         return self._engine
 
-    def ReturnScopedSession(self):
-        return self._scoped_session
+#     def ReturnScopedSession(self):
+#         return self._scoped_session
 
-    def ReturnSession(self):
-        return self._Session
+#     def ReturnSession(self):
+#         return self._Session
 
-    def check_db_version(self):
-        pass
+#     def check_db_version(self):
+#         pass
 
-    def migration(self):
-        # Run the DB Migration if needed
-        migration.run_migrations(
-            script_location="./src/db_migration", dsn=self._CreateDbString()
-        )
+#
 
-    def close(self, commit=True):
-        self._session.close()
+#     def close(self, commit=True):
+#         self._session.close()
 
-    def rollback(self):
-        self._session.rollback()
+#     def rollback(self):
+#         self._session.rollback()
 
 
-# =========================================
-# Configuration of the DB Connection Object
-# =========================================
+# # =========================================
+# # Configuration of the DB Connection Object
+# # =========================================
 
-# Define a DB session
-dbObject = Database(AppConfig)
-# Define the Base for the Database assignement
-Base = declarative_base(bind=dbObject.engine)
-# Check if we need to migrate the DB
-dbObject.migration()
-# Create a session for the DB
-db = dbObject.ReturnScopedSession()
+# # Define a DB session
+# dbObject = Database(AppConfig)
+# # Define the Base for the Database assignement
+# Base = declarative_base(bind=dbObject.engine)
+# # Check if we need to migrate the DB
+# dbObject.migration()
+# # Create a session for the DB
+# db = dbObject.ReturnScopedSession()
 
 
 # =========================================
@@ -384,7 +369,7 @@ db = dbObject.ReturnScopedSession()
 # ===============================
 
 
-@models.register(writeable=False)
+@models.register(editable=False)
 class BaseMixin(object):
     """
     Some general Functionality for reusing
@@ -477,7 +462,7 @@ class BaseMixin(object):
 # ===========
 
 
-@models.register(writeable=True)
+@models.register(editable=True)
 class PersonalDetails(BaseMixin, Base):
     """DB Interaction for personal Details"""
 
@@ -515,7 +500,7 @@ class PaymentDetails(BaseMixin, Base):
 # ===========
 
 
-@models.register(writeable=True)
+@models.register(editable=True)
 class Expenses(BaseMixin, Base):
     """DB Interaction class for Expenses"""
 
@@ -526,9 +511,10 @@ class Expenses(BaseMixin, Base):
 
     @classmethod
     def get_latest_id(cls):
-        obj = db.query(cls).order_by(cls.id.desc()).first()
+        session = Session()
+        obj = session.query(cls).order_by(cls.id.desc()).first()
         if not obj:
-            return f"{datetime.now().year}-{1:03}"
+            return f"{datetime.datetime.now().year}-{1:03}"
         # Split the String
         year, id = obj.expense_id.split("-")
 
@@ -547,12 +533,16 @@ class Expenses(BaseMixin, Base):
 
     @classmethod
     def get_all(cls, year=None):
+        session = Session()
         if year:
             # Return DB entrys filterd by year
-            return db.query(cls).filter(extract("year", cls.date) == int(year)).all()
+
+            return (
+                session.query(cls).filter(extract("year", cls.date) == int(year)).all()
+            )
         else:
             # Return all entrys in the DB
-            return db.query(cls).all()
+            return session.query(cls).all()
 
 
 # ===========
@@ -560,7 +550,7 @@ class Expenses(BaseMixin, Base):
 # ===========
 
 
-@models.register(writeable=True)
+@models.register(editable=True)
 class Invoices_Item(BaseMixin, Base):
     """DB Interaction class for Invoices Items"""
 
@@ -663,7 +653,7 @@ class Invoices(BaseMixin, Base):
 # ===========
 
 
-@models.register(writeable=True)
+@models.register(editable=True)
 class Customers(BaseMixin, Base):
     """DB Interaction class for Customers"""
 
@@ -682,7 +672,7 @@ class Customers(BaseMixin, Base):
 # ===========
 
 
-@models.register(writeable=True)
+@models.register(editable=True)
 class Agencys(BaseMixin, Base):
     """DB Interaction class for Agencys"""
 
@@ -695,7 +685,7 @@ class Agencys(BaseMixin, Base):
 # ===========
 
 
-@models.register(writeable=True)
+@models.register(editable=True)
 class Jobtypes(BaseMixin, Base):
     """DB Interaction class for Jobtypes"""
 

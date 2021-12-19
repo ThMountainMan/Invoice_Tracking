@@ -6,7 +6,7 @@ import os
 
 import bottle
 from config import appconfig as AppConfig
-from bottle import redirect, request, route, static_file, template
+from bottle import route, static_file
 
 log = logging.getLogger(__name__)
 
@@ -32,11 +32,9 @@ def export_csv(year=None):
     pass
 
 
-@route("/static/<path>/<filename>")
-def server_static(path, filename):
-    return static_file(
-        filename, root=os.path.join(os.path.dirname(__file__), "static", path)
-    )
+@route("/static/<filepath:path>")
+def server_static(filepath):
+    return static_file(filepath, root=os.path.join(os.path.dirname(__file__), "static"))
 
 
 if __name__ == "__main__":

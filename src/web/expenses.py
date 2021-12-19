@@ -1,9 +1,8 @@
-from bottle import redirect, request, route, static_file, template
-import database as DB
-from database import DbConnection
-from dateutil import parser
-import export
 import logging
+
+from bottle import get, post, request, response, template
+from database import DbConnection, Expenses
+from dateutil import parser
 
 log = logging.getLogger(__name__)
 
@@ -13,55 +12,42 @@ log = logging.getLogger(__name__)
 # =========================================
 
 
-@route("/expenses")
+@get("/expenses")
 def expenses():
-    print("Customer ...")
-    Data = DB.Expenses.get_all()
-    return template("expenses.tpl", input=Data)
+    with DbConnection() as db:
+        data = db.query("expenses")
+    return template("expenses.tpl", input=data)
 
 
-@route("/expense_add")
-@route("/expense_add", method="POST")
-@route("/expense_edit/<id>")
-@route("/expense_edit/<id>", method="POST")
-def expense_edit(id=None):
-    # Check what kind of request has beeing made
-    # We can either update or create a new entry
-    # The decission is made besed on the ID
-    if request.method == "POST":
-        # Receive the HTML form data as dictionary
-        Data = request.forms
-        # Prepare the Data for DB input
-        # decide if we want to update or to create
-        if id:
-            # We want to update an existion entry
-            # Send the new data to the Database
-            DB.Expenses.update(id, fData.process_update_data_Expense(Data))
+@post("/expenses/edit")
+def expense_edit():
+    try:
+        with DbConnection() as db:
+            id = request.POST.get("id")
+            # Get the expense we want to edit
+            if request.POST["action"] == "edit":
+                expenses = db.get("expenses", id) if id else Expenses()
+            # delete the selected expense
+            elif request.POST["action"] == "delete":
+                db.delete("expenses", id)
+                return {"success": True}
+            # TODO: How doe we rollback properly ?
+            elif request.POST["action"] == "restore":
+                db.rollback()
+                return {"success": True}
+            # Collect the Form Data
+            form_data = request.forms
+            # Create or Update the Expenses
+            expenses.expense_id = form_data.get("expense_id")
+            expenses.date = parser.parse(form_data.get("date"))
+            expenses.cost = form_data.get("cost").replace(",", ".")
+            expenses.comment = form_data.get("comment").encode("iso-8859-1") or None
 
-        else:
-            # We want to create a new DB entry
-            new = DB.Expenses(
-                expense_id=Data.get("expense_id"),
-                date=parser.parse(Data.get("date")),
-                cost=Data.get("cost"),
-                comment=Data.get("comment").encode("iso-8859-1"),
-            )
-            # Send the new data to the Database
-            DB.Expenses.create(new)
-
-        # get back to the overview
-        redirect("/expenses")
-
-    # If the reueast was to edit an expense
-    else:
-        Data = DB.Expenses.get(id) if id else None
-        newid = DB.Expenses.get_latest_id()
-        # Return the template with the DB data
-        return template("expenses_edit.tpl", expense=Data, new_id=newid)
-
-
-@route("/expense_delete/<id>")
-def expense_delete(id=None):
-    print(f"Deleting expense with ID : {id}")
-    DB.Expenses.delete(id)
-    redirect("/expenses")
+            if expenses.id:
+                db.merge(expenses)
+            else:
+                db.add(expenses)
+            return {"success": True}
+    except Exception as e:
+        response.status = 400
+        return str(e)
