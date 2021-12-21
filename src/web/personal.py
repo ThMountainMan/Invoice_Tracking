@@ -1,8 +1,10 @@
+import json
 import logging
 
-from bottle import get, post, request, response, template
+from bottle import get, post, request, response, template, put, redirect
 from database import DbConnection, PaymentDetails, PersonalDetails
-import json
+
+from .helper import Container
 
 log = logging.getLogger(__name__)
 
@@ -15,14 +17,17 @@ log = logging.getLogger(__name__)
 @get("/personal")
 def personal():
     with DbConnection() as db:
-        data = db.query("personaldetails")
-        payment_data = db.query("paymentdetails")
+        container = Container()
+        container.personaldetails = db.query("personaldetails")
+        container.payment_data = db.query("paymentdetails")
 
         payment_options = {0: "-"}
-        payment_options.update({p.id: str(p) for p in payment_data})
-        payment_options = json.dumps([[p] for i, p in payment_options.items()])
+        payment_options.update({p.id: str(p) for p in container.payment_data})
+        container.payment_options = json.dumps(
+            [[p] for i, p in payment_options.items()]
+        )
 
-    return template("personal.tpl", input=data, payment_options=payment_options)
+    return template("personal.tpl", **container)
 
 
 @post("/personal/edit")
@@ -51,7 +56,7 @@ def personal_edit():
             personal.city = form_data.get("city").encode("iso-8859-1")
             personal.mail = form_data.get("mail").encode("iso-8859-1")
             personal.phone = form_data.get("phone")
-            personal.payment_id = form_data.get("payment_id")
+            personal.payment_id = int(form_data.get("payment_id"))
             personal.taxnumber = form_data.get("taxnumber")
 
             if personal.id:
@@ -72,41 +77,42 @@ def personal_edit():
 @get("/payment")
 def payment():
     with DbConnection() as db:
-        data = db.query("payment")
+        data = db.query("paymentdetails")
     return template("payment.tpl", input=data)
 
 
-@post("/payment/edit")
-def payment_edit():
+@post("/payment_edit/<id>")
+@post("/payment_edit")
+def payment_edit(id=None):
     try:
         with DbConnection() as db:
+
+            # delete the selected expense
+            if "action" in request.POST.keys():
+                if request.POST["action"] == "delete":
+                    id = request.POST.get("id")
+                    db.delete("paymentdetails", id)
+                    return {"success": True}
+
+            # get the caller id
             id = request.POST.get("id")
             # Get the expense we want to edit
-            if request.POST["action"] == "edit":
-                paymentdetails = (
-                    db.get("paymentdetails", id) if id else PaymentDetails()
-                )
-            # delete the selected expense
-            elif request.POST["action"] == "delete":
-                db.delete("paymentdetails", id)
-                return {"success": True}
-            # TODO: How doe we rollback properly ?
-            elif request.POST["action"] == "restore":
-                db.rollback()
-                return {"success": True}
-            # Collect the Form Data
+            paymentdetails = db.get("paymentdetails", id) if id else PaymentDetails()
+
+            # get the Form Data
             form_data = request.forms
             # Create or Update the agency
-            paymentdetails.label = form_data.get("label").encode("iso-8859-1")
-            paymentdetails.name = form_data.get("name").encode("iso-8859-1")
-            paymentdetails.bank = form_data.get("bank").encode("iso-8859-1")
-            paymentdetails.IBAN = form_data.get("IBAN")
-            paymentdetails.BIC = form_data.get("BIC")
-            if personal.id:
-                db.merge(personal)
+            paymentdetails.label = form_data.label.encode("iso-8859-1")
+            paymentdetails.name = form_data.name.encode("iso-8859-1")
+            paymentdetails.bank = form_data.bank.encode("iso-8859-1")
+            paymentdetails.IBAN = form_data.IBAN
+            paymentdetails.BIC = form_data.BIC
+            if paymentdetails.id:
+                db.merge(paymentdetails)
             else:
-                db.add(personal)
+                db.add(paymentdetails)
             return {"success": True}
+
     except Exception as e:
         response.status = 400
         return str(e)
