@@ -42,13 +42,13 @@ if (typeof jQuery === 'undefined') {
             restoreButton: true,
             buttons: {
                 edit: {
-                    class: 'btn btn-sm btn-secondary',
-                    html: '<span class="fa fa-pencil"></span>',
+                    class: 'btn btn-sm btn-default',
+                    html: '<span class="fas fa-edit"></span>',
                     action: 'edit'
                 },
                 delete: {
-                    class: 'btn btn-sm btn-secondary',
-                    html: '<span class="fa fa-trash"></span>',
+                    class: 'btn btn-sm btn-default',
+                    html: '<span class="fas fa-trash-alt"></span>',
                     action: 'delete'
                 },
                 save: {
@@ -586,12 +586,12 @@ if (typeof jQuery === 'undefined') {
             switch (event.keyCode) {
                 case 9:  // Tab.
                     if (!settings.editButton) {
-                        Edit.submit($td);
+                        // Edit.submit($td);
                         Mode.edit($td.closest('td').next());
                     }
                     break;
                 case 13: // Enter.
-                    Edit.submit($td);
+                    // Edit.submit($td);
                     break;
                 case 27: // Escape.
                     Edit.reset($td);
