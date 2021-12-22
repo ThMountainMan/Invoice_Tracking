@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 @get("/customers")
 def customers():
     with DbConnection() as db:
-        data = db.query("customers")
+        data = db.query("customers", order_by="name")
     return template("customers.tpl", input=data)
 
 
