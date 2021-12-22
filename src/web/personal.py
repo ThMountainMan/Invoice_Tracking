@@ -30,7 +30,7 @@ def personal():
     return template("personal.tpl", **container)
 
 
-@post("/personal/edit")
+@post("/personal_edit")
 def personal_edit():
     try:
         with DbConnection() as db:
