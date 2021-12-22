@@ -1,6 +1,9 @@
-from bottle import redirect, request, route, template, post, response, get
-from database import DbConnection, Agencys
 import logging
+
+from bottle import get, post, request, response, template
+from database import Agencys, DbConnection
+
+from .helper import Container
 
 log = logging.getLogger(__name__)
 
@@ -13,8 +16,9 @@ log = logging.getLogger(__name__)
 @get("/agencys")
 def expenses():
     with DbConnection() as db:
-        data = db.query("agencys")
-    return template("agencys.tpl", input=data)
+        container = Container()
+        container.agencys = db.query("agencys", order_by="name")
+    return template("agencys.tpl", **container)
 
 
 @post("/agencys/edit")
