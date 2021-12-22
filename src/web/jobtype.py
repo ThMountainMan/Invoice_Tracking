@@ -1,7 +1,9 @@
-from bottle import redirect, request, route, get, template, response, post
-from database import DbConnection, Jobtypes
-from dateutil import parser
 import logging
+
+from bottle import get, post, request, response, template
+from database import DbConnection, Jobtypes
+
+from .helper import Container
 
 log = logging.getLogger(__name__)
 
@@ -13,14 +15,16 @@ log = logging.getLogger(__name__)
 @get("/jobtypes")
 def expenses():
     with DbConnection() as db:
-        data = db.query("jobtypes")
-    return template("jobtypes.tpl", input=data)
+        container = Container()
+        container.jobtypes = db.query("jobtypes", order_by="name")
+    return template("jobtypes.tpl", **container)
 
 
 @post("/jobtypes/edit")
 def expense_edit():
     try:
         with DbConnection() as db:
+            container = Container()
             id = request.POST.get("id")
             # Get the expense we want to edit
             if request.POST["action"] == "edit":

@@ -9,26 +9,30 @@
     </div>
     <div class="panel-body">
       <div class="clearfix">
-        <button class="btn btn-primary" id="addRow">Add Row</button>
-        <button type="button" class="btn btn-primary" style="margin-right:20px;">Reload</button>
+        <button class="btn btn-primary" id="addRow">Add New Jobtype</button>
+        <button type="button" class="btn btn-primary" onClick="window.location.reload();">Reload</button>
       </div>
       <br />
+
+      <div class="alert alert-warning collapse alert-dismissible" role="alert", id="warning">
+        Please make sure that all fields are filled!!
+      </div>
 
       <table class="table table-hover" id="tableedit">
         <thead class="thead-light">
           <tr>
-          <th>#</th>
+          <th style="display: none"></th>
           <th>Name</th>
           </tr>
         </thead>
         <tbody>
           <tr class="tableedit-template" style="display: none;">
-            <td></td>
+            <td style="display: none"></td>
             <td></td>
           </tr>
-          % for jobtype in input:
+          % for jobtype in jobtypes:
           <tr>
-            <td >{{jobtype.id}}</td>
+            <td style="display: none" >{{jobtype.id}}</td>
             <td>{{jobtype.name}}</td>
           </tr>
           % end
@@ -63,8 +67,30 @@
       console.log(textStatus);
       console.log(errorThrown);
       alert(jqXHR.responseText);
+    },
+    onAjax: function (action, data, serialize) {
+      console.log('onAjax(action, serialize)');
+      console.log(action);
+      console.log(serialize);
+
+      if (action === 'edit') {
+        
+        var values = data.split('&');
+        var name = values[1].split('=')[1];
+        // check for empty string
+        if (!name) {
+          $("#warning").fadeTo(3000, 800).slideUp(800, function () {
+            $("#warning").slideUp(800);
+          });
+          return false;
+        } else {
+          return true;
+        }
+      }
     }
   });
+
+  
 
   $("#addRow").click(function () {
     var clone = $(".tableedit-template").first().clone();
