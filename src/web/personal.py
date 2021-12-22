@@ -86,16 +86,15 @@ def payment():
 def payment_edit(id=None):
     try:
         with DbConnection() as db:
+            # get the caller id
+            id = request.POST.get("id")
 
             # delete the selected expense
             if "action" in request.POST.keys():
                 if request.POST["action"] == "delete":
-                    id = request.POST.get("id")
                     db.delete("paymentdetails", id)
                     return {"success": True}
 
-            # get the caller id
-            id = request.POST.get("id")
             # Get the expense we want to edit
             paymentdetails = db.get("paymentdetails", id) if id else PaymentDetails()
 
