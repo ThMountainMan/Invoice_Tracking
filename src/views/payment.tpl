@@ -207,7 +207,7 @@
     $.ajax({
       url: "/payment_edit",
       type: "post",
-      data: form.serialize(),
+      data: form.serialize() + "&action=edit",
       action: "hallo",
       success: function () {
         // alert("worked");
