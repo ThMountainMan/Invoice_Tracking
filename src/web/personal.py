@@ -30,7 +30,7 @@ def personal():
     return template("personal.tpl", **container)
 
 
-@post("/personal_edit")
+@post("/personal/edit")
 def personal_edit():
     try:
         with DbConnection() as db:
@@ -77,7 +77,7 @@ def personal_edit():
 @get("/payment")
 def payment():
     with DbConnection() as db:
-        data = db.query("paymentdetails")
+        data = db.query("paymentdetails", order_by="label")
     return template("payment.tpl", input=data)
 
 

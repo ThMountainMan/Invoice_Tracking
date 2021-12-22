@@ -277,18 +277,18 @@
   });
 
   $("form").submit(function (e) {
-      e.preventDefault();
-      var form = $(this);
-      var id = form.attr("id");
-      // alert(id + ' form submitted');
-      $.ajax({
-        url: "/personal_edit",
-        type: "post",
-        data: form.serialize() + "&action=edit",
-        success: function () {
-          // alert("worked");
-        },
-      });
-      window.location.reload();
+    e.preventDefault();
+    var form = $(this);
+    var id = form.attr("id");
+    // alert(id + ' form submitted');
+    $.ajax({
+      url: "/personal/edit",
+      type: "post",
+      data: form.serialize() + "&action=edit",
+      success: function () {
+        // alert("worked");
+      },
     });
+    window.location.reload();
+  });
 </script>
