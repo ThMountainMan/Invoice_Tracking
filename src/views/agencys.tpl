@@ -9,7 +9,7 @@
     </div>
     <div class="panel-body">
       <div class="clearfix">
-        <button class="btn btn-primary" id="addRow">Add New Agency</button>
+        <button class="btn btn-primary" id="addRow"><i class="fas fa-plus"></i>Add New Agency</button>
         <button type="button" class="btn btn-primary" onClick="window.location.reload();">Reload</button>
       </div>
       <br />

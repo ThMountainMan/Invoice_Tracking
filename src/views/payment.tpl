@@ -7,7 +7,7 @@
   </div>
   <div class="panel-body">
     <div class="clearfix">
-      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#create">
+      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#create"><i class="fas fa-plus"></i>
         Add New Payment Method
       </button>
       <button type="button" class="btn btn-primary" onClick="window.location.reload();">
@@ -22,7 +22,7 @@
           <td style="display: none"></td>
           <th>Label</th>
           <th>Bank Details</th>
-          <th>EDIT</th>
+          <th></th>
         </tr>
       </thead>
 
@@ -40,13 +40,9 @@
           {{ data.BIC }}<br />
         </td>
 
-        <td>
-          <!-- <button onclick="location.href = '/payment_edit/{{data.id}}';" type="button" class="btn btn-warning btn-sm">EDIT</button> -->
-          <button type="button" class="btn btn-warning btn-sm" data-toggle="modal"
-            data-target="#showdata_{{ data.id }}">
-            EDIT
-          </button>
-          <!-- <button onclick="location.href = '/payment_delete/{{data.id}}';" type="button" class="btn btn-danger btn-sm">DELETE</button> -->
+        <td align="right">
+          <button type="button" class="button btn btn-warning btn-sm" data-toggle="modal" style="margin-right:-25px;"
+            data-target="#showdata_{{ data.id }}"><i class="fas fa-edit"></i></button>
         </td>
       </tr>
 

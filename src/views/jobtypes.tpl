@@ -9,7 +9,7 @@
     </div>
     <div class="panel-body">
       <div class="clearfix">
-        <button class="btn btn-primary" id="addRow">Add New Jobtype</button>
+        <button class="btn btn-primary" id="addRow"><i class="fas fa-plus"></i>Add New Jobtype</button>
         <button type="button" class="btn btn-primary" onClick="window.location.reload();">Reload</button>
       </div>
       <br />
@@ -31,7 +31,7 @@
             <td></td>
           </tr>
           % for jobtype in jobtypes:
-          <tr>
+          <tr >
             <td style="display: none" >{{jobtype.id}}</td>
             <td>{{jobtype.name}}</td>
           </tr>

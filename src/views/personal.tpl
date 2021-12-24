@@ -7,7 +7,7 @@
   </div>
   <div class="panel-body">
     <div class="clearfix">
-      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#create">
+      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#create"><i class="fas fa-plus"></i>
         Add New Personal Details
       </button>
       <button type="button" class="btn btn-primary" onClick="window.location.reload();">
@@ -19,14 +19,14 @@
     <table class="table table-hover" id="tableedit">
       <thead class="thead-light">
         <tr>
-          <td style="display: none"></td>
+          <th style="display: none"></th>
           <th>LABEL</th>
           <th>Name</th>
           <th>Contact Details</th>
           <th>Address</th>
           <th>Tax#</th>
           <th>Payment ID</th>
-          <th>EDIT</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -56,11 +56,10 @@
           </td>
           <td>{{ data.taxnumber }}</td>
           <td>{{ data.payment_details.label }}</td>
-          <td>
-            <button type="button" class="btn btn-warning btn-sm" data-toggle="modal"
-              data-target="#showdata_{{ data.id }}">
-              EDIT
-            </button>
+          <td align="right">
+            <button type="button" class="button btn btn-warning btn-sm" data-toggle="modal" style="margin-right:-25px;"
+              data-target="#showdata_{{ data.id }}"><i class="fas fa-edit"></i></button>
+          </td>
           </td>
         </tr>
 
