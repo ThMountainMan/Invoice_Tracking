@@ -2,235 +2,502 @@
 <html lang="en" dir="ltr">
 
 <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>Invoice Tracker</title>
     <style>
-        .negative {
-            background-color: #ff5c5c
-        }
-        
-        .positive {
-            background-color: #a1ffac
-        }
-        
         .open {
-            background-color: #FBFF93
-        }
-        
-        form {
-            margin: 0px;
-            padding: 0px;
-            display: inline;
-        }
-        
-        p {
-            margin: 0;
-            display: inline;
-            float: center;
+            background-color: #fbff93;
         }
     </style>
 </head>
 
-<body>
+<header>
     % include('base.tpl')
-    <header>
-        <div class="container-fluid">
-            <h1 class="logo">Total Overview
-                <p id="currentYear"></p>
-            </h1>
+    <div class="container-fluid">
+        %include('overview.tpl', year=2021)
+        <br />
+    </div>
+</header>
 
-            <table class=" table" id="cssTable">
+<body>
+    <div class="container-fluid">
+        <div class="panel-body">
+            <div class="clearfix">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#create">
+                    <i class="fas fa-plus"> Add New Invoice</i>
+                </button>
+                <button type="button" class="btn btn-primary" onClick="window.location.reload();">
+                    Reload
+                </button>
+            </div>
+            <br />
+
+            <div class="alert alert-warning collapse alert-dismissible" role="alert" , id="warning">
+                Please enter a valid date !!
+            </div>
+
+            <table class="table table-hover" id="tableedit">
                 <thead class="thead-light">
                     <tr>
-                        <th class="align-center">Income</th>
-                        <th class="align-center">Outstanding</th>
-                        <th class="align-center">Expenses</th>
-                        <th class="align-center">Profit</th>
+                        <th style="display: none"></th>
+                        <th>Invoide ID</th>
+                        <th>Invoice Date</th>
+                        <th>Customer Name</th>
+                        <th>Job Type</th>
+                        <th>count</th>
+                        <th>Paydate</th>
+                        <th></th>
+                    </tr>
                 </thead>
-                </tr>
-                <tr>
-                    <td><b>€ {{"{:.2f}".format(overview['income'])}}</b></td>
-                    % if overview['outstanding'] > 0:
-                    <td class="open"><b>€ {{"{:.2f}".format(overview['outstanding'])}}</b></td>
+
+                % for invoice in invoices:
+                % if invoice.paydate:
+                <tr class="table-success">
+                    % else:
+                <tr class="table-warning">
+                    % end
+
+                    <td style="display: none">{{ invoice.id }}</td>
+                    <td>
+                       
+                        <button type="button" class="btn btn-info btn-sm" onclick="window.location.href = '/invoice/display/{{invoice.id}}';">
+                            <i class="fas fa-hotdog"></i> {{invoice.invoice_id}} </button>
+              
+                    </td>
+                    <td>{{ invoice.date }}</td>
+                    <td>{{ invoice.customer.name.rstrip() }}</td>
+                    <td>{{ invoice.jobtype.name.rstrip() }}</td>
+                    <td><b> € {{ "{:.2f}".format(invoice.get_total()) }}</b></td>
+
+                    % if invoice.paydate:
+                    <td>{{ invoice.paydate }}</td>
+
                     %else:
-                    <td><b>€ {{"{:.2f}".format(overview['outstanding'])}}</b></td>
+                    <td>
+                        <div class="input-group">
+                            <input type="date" id="date_{{invoice.id}}" data-date-format="DD-MM-YYYY" name="date"
+                                required onchange="check_payment(event);" />
+                            <!-- <input type="date" id="date_{{invoice.id}}" name="date" required onselect="dosomething('date_{{invoice.id}}')"/> -->
+                            <button type="button" id="btn_date_{{invoice.id}}" disabled
+                                onclick="complete_payment('{{invoice.id}}');" class="btn btn-primary btn-sm">
+                                <i class="fas fa-hand-holding-usd"></i>
+                            </button>
+                        </div>
+                    </td>
+
                     %end
-                    <td><b>€ {{"{:.2f}".format(overview['expenses'])}}</b></td>
-                    % if overview['profit'] >= 0:
-                    <td class="positive"><b>€ {{"{:.2f}".format(overview['profit'])}}</b></td>
-                    %else:
-                    <td class="negative"><b>€ {{"{:.2f}".format(overview['profit'])}}</b></td>
-                    %end
+
+                    <td align="right">
+                        <div class="btn-group btn-group-justified" role="group">
+                            <div class="btn-group" role="group">
+
+                                <button onclick="window.location.href = '/invoice/download/{{invoice.id}}';" type="button"
+                                    class="btn btn-primary btn-sm"><i class="fa fa-download"></i></button>
+
+                            </div>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="button btn btn-warning btn-sm" data-toggle="modal"
+                                    style="margin-right:-25px;" data-target="#showdata_{{ invoice.id }}"><i
+                                        class="fas fa-edit"></i></button>
+                            </div>
+                        </div>
+                    </td>
                 </tr>
-            </table>
 
-            <br>
+                <!-- EDIT existing Invoice -->
+                <div class="modal fade" id="showdata_{{ invoice.id }}" tabindex="0" role="dialog"
+                    aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLongTitle">
+                                    Edit Invoice Details "{{ invoice.invoice_id }}"
+                                </h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <form method="post" action="/invoice/edit" id="form_{{ invoice.id }}">
 
-            <div>
-                <h1 class="logo">All available invoices </h1>
+                                    <input type="hidden" name="id" value="{{ invoice.id }}" />
 
-                <div class="row">
-                    <div class="col-sm-2 form-inline">
-                        <label for="filter_year" class="col-lg-4">Year:</label>
-                        <select name="filter_year" class="form-control w-100" id="dropdownYear" style="width: 120px;" onchange="location = this.value;">
-              <option value="/invoices" selected>ALL</option>
-            </select>
+                                    <div class="form-group required">
+                                        <b><label class="control-label">Invoice ID:</label></b>
+                                        <input type="text" class="form-control" name="invoice_id" required
+                                            readonly="readonly" value="{{ invoice.invoice_id }}" />
+                                    </div>
+
+                                    <div class="form-group required">
+                                        <b><label class='control-label'>Personal / Bank Details:</label></b>
+                                        <select id="personal_id" class="form-control" name="personal_id" required>
+                                            <option selected value="{{ invoice.personal_id }}">
+                                                {{ invoice.personal.label }}</option>
+                                            % for person in personas:
+                                            <option value={{person.id}}>{{person.label}}</option>
+                                            % end
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group required">
+                                        <b><label class='control-label'>Invoice Date:</label></b>
+                                        <input type="date" id="date" class="form-control" name="date" required
+                                            value="{{invoice.date}}">
+                                    </div>
+
+                                    <div class="form-group required">
+                                        <b><label class='control-label'>Customer:</label></b>
+                                        <select id="customer_id" class="form-control" name="customer_id" required>
+                                            <option selected value="{{ invoice.customer_id }}">
+                                                {{ invoice.customer.name }}</option>
+                                            % for customer in customers:
+                                            <option value={{customer.id}}>{{customer.name}}</option>
+                                            % end
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group required">
+                                        <b><label class='control-label'>Jobtype</label></b>
+                                        <select id="jobcode_id" class="form-control" name="jobcode_id" required>
+                                            <option selected value="{{ invoice.jobcode_id }}">
+                                                {{ invoice.jobtype.name }}</option>
+                                            % for jobtype in jobtypes:
+                                            <option value={{jobtype.id}}>{{jobtype.name}}</option>
+                                            % end
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group required">
+                                        <b><label class='control-label'>Agency:</label></b>
+                                        <select id="agency_id" class="form-control" name="agency_id" required>
+                                            <option value=None>--</option>
+                                            % for agency in agencys:
+                                            <option value={{agency.id}}>{{agency.name}}</option>
+                                            % end
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group required">
+                                        <b><label class='control-label'>Mwst.:</label></b>
+                                        <div class="input-group-prepend">
+                                            <input type="number" id="mwst" class="form-control" name="mwst" min="0"
+                                                max="20" value="{{int(invoice.invoice_mwst)}}" required
+                                                value={{invoice.invoice_mwst}}>
+                                            <span class="input-group-text" id="basic-addon1">%</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group required invoice" id="otherFieldGroupDiv" name=Test123>
+                                        <br>
+                                        <h5>Invoice Details:</h5>
+                                        <br>
+                                        <div id="itemlist2" class="itemlist">
+                                            % for item in invoice.items:
+
+                                            <input type="hidden" name="item_id" value="{{item.id}}" />
+
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <b><label class='control-label'>Item Count:</label></b>
+                                                    <input type="number" class="form-control w-100" name="count" min="1"
+                                                        required value="{{item.count}}">
+                                                </div>
+                                                <div class="col-6">
+                                                    <b><label class='control-label'>Cost:</label></b>
+                                                    <div class="input-group-prepend">
+                                                        <input type="number" class="form-control w-100" name="cost"
+                                                            required value="{{item.cost}}">
+                                                        <span class="input-group-text" id="basic-addon1">€</span>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-12">
+                                                    <b><label class='control-label'>Description:</label></b>
+                                                    <textarea class="form-control w-100" name="description" rows=" 3"
+                                                        required>{{item.description}}</textarea>
+                                                </div>
+                                            </div>
+                                            <br>
+                                            %end
+                                        </div>
+                                        <div id="moreitemlist" class="moreitemlist"></div>
+                                    </div>
+
+
+                                    <!-- <div id="newRow">
+                                        <button id="additem" type="button" class="btn btn-info">Additional Item</button>
+                                        <button id="removeitem" type="button" class="btn btn-danger">Remove</button>
+                                    </div><br> -->
+
+
+
+                                    <div class="modal-footer">
+                                        <input type="submit" class="btn btn-primary" value="Save Changes" />
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                            Close
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
-                    <div class="col-sm-2">
-                        <label for="filter_jobtype">Jobtypes:</label>
-                        <select name="filter_jobtype" class="form-control w-100" id="filter_jobtype" style="width: 120px;" onchange="location = this.value;" disabled>
-              <option value="/invoices" selected>--</option>
-              % for jobtype in jobtypes:
-              <option value="/invoices_filter/jobytpes/{{jobtype.id}}">{{jobtype.name}}</option>
-              % end
-            </select>
-                    </div>
-                    <div class=" col-sm-2">
-                        <label for="filter_status">Status:</label>
-                        <select name="filter_status" class="form-control w-100" id="filter_status" style="width: 120px;" onchange="location = this.value;" disabled>
-              <option value="/invoices" selected>--</option>
-              <option value="/invoices_filter/status/1">OPEN</option>
-              <option value="/invoices_filter/status/2">PAYED</option>
-            </select>
-                    </div>
-
                 </div>
 
 
-                <br>
-                <br><a href="/invoice_add" class="btn btn-primary"> Create New Invoice </a><br><br>
-                <table class=" table" id="invoices">
-                    <thead class="thead-light">
-                        <tr>
-                            <th onclick="sortTable(0)">Invoide ID</th>
-                            <th onclick="sortTable(1)">Invoice Date</th>
-                            <th onclick="sortTable(2)">Customer Name</th>
-                            <th onclick="sortTable(3)">Job Type</th>
-                            <th onclick="sortTable(4)">Ammount</th>
-                            <th onclick="sortTable(5)">Paydate</th>
-                            <th>Download / EDIT</th>
-                    </thead>
-                    </tr>
-                    % for invoice in input: 
-                    % if invoice.paydate:
-                    <tr style="background-color:#F6FFF6;">
-                        % else:
-                        <tr style=" background-color: #FBFF93;">
-                            % end
-                            <td><b><a href="/invoice_show/{{invoice.id}}">{{invoice.invoice_id}}</a></b></td>
-                            <td>{{invoice.date}}</td>
-                            <td>{{invoice.customer.name}}</td>
-                            <td>{{invoice.jobtype.name}}</td>
-                            <td><b> € {{"{:.2f}".format(invoice.get_ammount()['sum_mwst'])}}</b></td>
-                            % if invoice.paydate:
-                            <td>{{invoice.paydate}}</td>
-                            %else:
-                            <td>
-                                <form class="p-3" method="post" action='/invoice_pay/{{invoice.id}}'>
-                                    <div class="pull-left" style="margin-right:10px">
-                                        <input type="date" id="date" class="form-control" name="date" required>
+                % end
+            </table>
+        </div>
+    </div>
+
+    <!-- Add a new Invoice -->
+    <div class="modal fade" id="create" tabindex="0" role="dialog" aria-labelledby="exampleModalCenterTitle"
+        aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">
+                        Add a New Invoice"
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form method="post" action="/invoice/edit" id="myForm">
+
+                        <input type="hidden" name="id" value="" />
+
+                        <div class="form-group ">
+                            <b><label class="control-label">Invoice ID:</label></b>
+                            <input disabled type="text" class="form-control" name="invoice_id" readonly="readonly"
+                                value={{invoice.generate_id()}} />
+                        </div>
+
+                        <div class="form-group required">
+                            <b><label class='control-label'>Personal / Bank Details:</label></b>
+                            <select id="personal_id" class="form-control" name="personal_id" required>
+                                % for person in personas:
+                                <option value={{person.id}}>{{person.label.upper()}}</option>
+                                % end
+                            </select>
+                        </div>
+
+                        <div class="form-group required">
+                            <b><label class='control-label'>Invoice Date:</label></b>
+                            <input type="date" id="date" class="form-control" name="date" required>
+                        </div>
+
+                        <div class="form-group required">
+                            <b><label class='control-label'>Customer:</label></b>
+                            <select id="customer_id" class="form-control" name="customer_id" required>
+                                % for customer in customers:
+                                <option value={{customer.id}}>{{customer.name}}</option>
+                                % end
+                            </select>
+                        </div>
+
+                        <div class="form-group required">
+                            <b><label class='control-label'>Jobtype</label></b>
+                            <select id="jobcode_id" class="form-control" name="jobcode_id" required>
+                                % for jobtype in jobtypes:
+                                <option value={{jobtype.id}}>{{jobtype.name}}</option>
+                                % end
+                            </select>
+                        </div>
+
+                        <div class="form-group required">
+                            <b><label class='control-label'>Agency:</label></b>
+                            <select id="agency_id" class="form-control" name="agency_id" required>
+                                <option value=None>--</option>
+                                % for agency in agencys:
+                                <option value={{jobtype.id}}>{{agency.name}}</option>
+                                % end
+                            </select>
+                        </div>
+
+                        <div class="form-group required">
+                            <b><label class='control-label'>Mwst.:</label></b>
+                            <div class="input-group-prepend">
+                                <input type="number" id="mwst" class="form-control" name="mwst" min="0" max="20"
+                                    value="19" required>
+                                <span class="input-group-text" id="basic-addon1">%</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group required invoice" id="otherFieldGroupDiv" name=Test123>
+                            <br>
+                            <h5>Invoice Details:</h5>
+                            <br>
+                            <div id="itemlist1" class="itemlist">
+
+                                <input type="hidden" name="item_id" value="" />
+
+                                <div class="row">
+                                    <div class="col-6">
+                                        <b><label class='control-label'>Item Count:</label></b>
+                                        <input type="number" class="form-control w-100" name="count"
+                                            onkeypress="return event.charCode >= 48" min="1" required>
                                     </div>
-                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-check"></i></button>
-                                </form>
-                            </td>
-                            %end
-                            <td>
-                                <form action="/invoice_show/{{invoice.id}}" method="post">
-                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-download"></i></button>
-                                </form>
+                                    <div class="col-6">
+                                        <b><label class='control-label'>cost:</label></b>
+                                        <div class="input-group-prepend">
+                                            <input type="number" class="form-control w-100" name="cost" required>
+                                            <span class="input-group-text" id="basic-addon1">€</span>
+                                        </div>
+                                    </div>
 
-                                <button onclick="location.href = '/invoice_edit/{{invoice.id}}';" type="button" class="btn btn-warning btn-sm">EDIT</button>
-                                <!--<button href="/invoice_delete/{{invoice.id}}" onclick="return confirm('Are you sure?');" type="button" class="btn btn-danger btn-sm">DELETE</button> -->
-                                <a href="/invoice_delete/{{invoice.id}}" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to delete the Invoice:\n--> {{invoice.invoice_id}}?')">DELETE</a>
-                            </td>
-                        </tr>
-                        % end
-                </table>
+                                    <div class="col-12">
+                                        <b><label class='control-label'>Description:</label></b>
+                                        <textarea class="form-control w-100" name="description" rows=" 3"
+                                            required></textarea>
+                                    </div>
+                                </div>
+                                <br>
+                            </div>
+                            <div id="moreitemlist" class="moreitemlist"></div>
+                        </div>
 
+                        <div id="newRow">
+                            <button id="additem" type="button" class="btn btn-info">Additional Item</button>
+                            <button id="removeitem" type="button" class="btn btn-danger">Remove</button>
+                        </div><br>
+
+
+
+                        <div class="modal-footer">
+                            <input type="submit" class="btn btn-primary" value="Save Changes" />
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                                Close
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-    </header>
+        </div>
+    </div>
 
-
-    <script>
-        //
-        // This Script adds all the years to the Year Selector
-        //
-        var i, currentYear, startYear, endYear, newOption, dropdownYear;
-        var pathArray = window.location.pathname.split('/');
-        dropdownYear = document.getElementById("dropdownYear");
-        currentYear = (new Date()).getFullYear();
-        startYear = 2010;
-        endYear = currentYear;
-
-        document.getElementById('currentYear').innerHTML = pathArray[2];
-
-        for (i = startYear; i <= endYear; i++) {
-            newOption = document.createElement("option");
-            newOption.value = "/invoices/" + i;
-            newOption.label = i;
-            if (i == pathArray[2]) {
-                newOption.selected = true;
-            }
-            dropdownYear.appendChild(newOption);
-        }
-
-
-        function sortTable(n) {
-            var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
-            table = document.getElementById("invoices");
-            switching = true;
-            //Set the sorting direction to ascending:
-            dir = "asc";
-            /*Make a loop that will continue until
-            no switching has been done:*/
-            while (switching) {
-                //start by saying: no switching is done:
-                switching = false;
-                rows = table.rows;
-                /*Loop through all table rows (except the
-                first, which contains table headers):*/
-                for (i = 1; i < (rows.length - 1); i++) {
-                    //start by saying there should be no switching:
-                    shouldSwitch = false;
-                    /*Get the two elements you want to compare,
-                    one from current row and one from the next:*/
-                    x = rows[i].getElementsByTagName("TD")[n];
-                    y = rows[i + 1].getElementsByTagName("TD")[n];
-                    /*check if the two rows should switch place,
-                    based on the direction, asc or desc:*/
-                    if (dir == "asc") {
-                        if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
-                            //if so, mark as a switch and break the loop:
-                            shouldSwitch = true;
-                            break;
-                        }
-                    } else if (dir == "desc") {
-                        if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
-                            //if so, mark as a switch and break the loop:
-                            shouldSwitch = true;
-                            break;
-                        }
-                    }
-                }
-                if (shouldSwitch) {
-                    /*If a switch has been marked, make the switch
-                    and mark that a switch has been done:*/
-                    rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
-                    switching = true;
-                    //Each time a switch is done, increase this count by 1:
-                    switchcount++;
-                } else {
-                    /*If no switching has been done AND the direction is "asc",
-                    set the direction to "desc" and run the while loop again.*/
-                    if (switchcount == 0 && dir == "asc") {
-                        dir = "desc";
-                        switching = true;
-                    }
-                }
-            }
-        }
-    </script>
 
 </body>
 
-</html>
+
+<script type="text/javascript">
+
+    $("#tableedit").Tabledit({
+        url: "/invoice/edit",
+        restoreButton: true,
+        editButton: false,
+        columns: {
+            identifier: [0, "id"],
+            editable: [],
+        },
+
+        onSuccess: function (data, textStatus, jqXHR, lastEditedRow) {
+            if (data.new_id) {
+                lastEditedRow.attr("id", data.new_id);
+                lastEditedRow
+                    .find("span.tabledit-span.tabledit-identifier")
+                    .text(data.new_id);
+                lastEditedRow
+                    .find("input.tabledit-input.tabledit-identifier")
+                    .attr("value", data.new_id);
+            }
+        },
+        onFail: function (jqXHR, textStatus, errorThrown) {
+            console.log("onFail(jqXHR, textStatus, errorThrown)");
+            console.log(jqXHR);
+            console.log(textStatus);
+            console.log(errorThrown);
+            alert(jqXHR.responseText);
+        },
+    });
+
+    $("form").submit(function (e) {
+        e.preventDefault();
+        var form = $(this);
+        var id = form.attr("id");
+        // alert(id + ' form submitted');
+        $.ajax({
+            url: "/invoice/edit",
+            type: "post",
+            data: form.serialize() + "&action=edit",
+            success: function () {
+                // alert("worked");
+            },
+        });
+        window.location.reload();
+    });
+
+
+    $(document).ready(function () {
+        $('#additem').click(function () {
+            var num = $('.itemlist').length;
+            var newNum = new Number(num + 1);
+
+            var newSection = $('#itemlist' + num).clone().attr('id', 'itemlist' + newNum);
+
+            // Add the clone to the section
+            $('.itemlist').last().append(newSection)
+            // Enable the Disable button
+            $('#removeitem').prop('disabled', false);
+
+            // If there are more then X items, do not allow the creation of more
+            if (newNum == 5)
+                $('#additem').attr('disabled', 'disabled');
+        });
+
+        $('#removeitem').click(function () {
+            var num = $('.itemlist').length; // how many "duplicatable" input fields we currently have
+            $('#itemlist' + num).remove(); // remove the last element
+
+            // enable the "add" button
+            $('#additem').prop('disabled', false);
+
+            // if only one element remains, disable the "remove" button
+            if (num - 1 == 1)
+                $('#removeitem').prop('disabled', true);
+        });
+
+
+    });
+
+    function check_payment(event) {
+        var value = event.target.value;
+        var id = event.target.id
+
+        var btn = $("#btn_" + id);
+        btn.prop('disabled', false);
+    };
+
+    function complete_payment(id) {
+        var date = $("#date_" + id).val();
+        if (!date) {
+            $("#warning").fadeTo(3000, 800).slideUp(800, function () {
+                $("#warning").slideUp(800);
+            });
+        };
+        // submit the change
+        $.ajax({
+            url: "/invoice/edit",
+            type: "post",
+            data: "&action=pay" + "&id=" + id + "&paydate=" + date,
+            success: function () {
+                window.location.reload();
+            },
+        });
+
+    };
+
+    function download(id) {
+        // submit the change
+        $.ajax({
+            url: "/invoice/download",
+            type: "post",
+            data: "&action=download" + "&id=" + id,
+            success: function () {
+                window.location.reload();
+            },
+        });
+    };
+
+
+</script>
