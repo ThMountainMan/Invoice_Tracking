@@ -16,6 +16,7 @@ from sqlalchemy import (
     Integer,
     create_engine,
     extract,
+    desc,
 )
 from sqlalchemy.orm.attributes import QueryableAttribute
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
@@ -286,89 +287,6 @@ class DbConnection:
         return _attributes
 
 
-# class Database:
-#     def __init__(self, config):
-#         # Create the connection engine
-#         self.config = config
-#         self._engine = sqlalchemy.create_engine(
-#             self._CreateDbString(), echo=self.config.debug
-#         )
-#         self._session = sessionmaker(
-#             bind=self._engine, autocommit=False, autoflush=False
-#         )
-#         # self._Session = self._session()
-#         self._scoped_session = scoped_session(self._session)
-
-#     def __enter__(self):
-#         return self
-
-#     def __exit__(self, exc_type, exc_val, exc_tb):
-#         self.close()
-
-#     def _CreateDbString(self):
-#         # In case we have a local DB File
-#         if not self.config.local:
-#             return f"mysql+pymysql://{self.config.db_user}:{self.config.db_pw}@{self.config.db_host}:{self.config.db_port}/{self.config.db_name}?charset=utf8"
-
-#         path = self.config.db_path
-#         if not path:
-#             cur_path = os.path.dirname(os.path.abspath(__file__))
-#             path = os.path.join(cur_path, "db")
-
-#         if not os.path.exists(path):
-#             os.makedirs(path)
-#         return f"sqlite:///{path}//{self.config.db_name}.db?charset=utf8"
-
-#     @property
-#     def connection(self):
-#         self._conn = self._engine.connect()
-#         return self._conn
-
-#     @property
-#     def engine(self):
-#         return self._engine
-
-#     def ReturnScopedSession(self):
-#         return self._scoped_session
-
-#     def ReturnSession(self):
-#         return self._Session
-
-#     def check_db_version(self):
-#         pass
-
-#
-
-#     def close(self, commit=True):
-#         self._session.close()
-
-#     def rollback(self):
-#         self._session.rollback()
-
-
-# # =========================================
-# # Configuration of the DB Connection Object
-# # =========================================
-
-# # Define a DB session
-# dbObject = Database(AppConfig)
-# # Define the Base for the Database assignement
-# Base = declarative_base(bind=dbObject.engine)
-# # Check if we need to migrate the DB
-# dbObject.migration()
-# # Create a session for the DB
-# db = dbObject.ReturnScopedSession()
-
-
-# =========================================
-# Definition for DB Interaction
-# =========================================
-
-# ===============================
-# Basic Function definition
-# ===============================
-
-
 @models.register(editable=False)
 class BaseMixin(object):
     """
@@ -382,79 +300,23 @@ class BaseMixin(object):
     def __tablename__(cls):
         return cls.__name__.lower()
 
-    __table_args__ = {"mysql_engine": "InnoDB"}
-
     id = Column(Integer, primary_key=True)
 
-    @classmethod
-    def create(cls, obj):
-        # Create a new Entry in the DB
-        # check if the entry is already existant
-        try:
-            db.add(obj)
-            db.commit()
-            return obj.id
-        except Exception as e:
-            db.rollback()
-            log.error(
-                f"Not able to create object in '{cls.__tablename__(cls)}' with the Error:\n{e}"
-            )
-        return None
 
-    @classmethod
-    def delete(cls, id):
-        # Delete Entry based on ID
-        obj = db.query(cls).filter(cls.id == id).first()
-        if cls.check_relation():
-            return False
+# ===========
+# VERSION
+# ===========
 
-        db.delete(obj)
-        db.commit()
 
-    @classmethod
-    def check_relation(cls):
-        # Check if we have any relation with this class
-        pass
+@models.register(editable=True)
+class Version(Base):
+    """Version to store the version nr of the DB"""
 
-    @classmethod
-    def get(cls, id=None, name=None):
-        # Return a specific result
-        if name:
-            return db.query(cls).filter(cls.name == name).first()
-        elif id:
-            return db.query(cls).filter(cls.id == id).first()
-        else:
-            return None
+    # TODO: Implement a propper version control !!
 
-    @classmethod
-    def get_all(cls):
-        # Return all entrys in the DB
-        return db.query(cls).all()
-
-    @classmethod
-    def count(cls):
-        # Return the total count of all entrys
-        return db.query(cls).count()
-
-    @classmethod
-    def check_link(cls):
-        # TODO: Impement a method that checks if a foreign key is uesd in an
-        # Invoice or not, so that we can delete an object safely
-        pass
-
-    @classmethod
-    def update(cls, id, dUpdate):
-        # Update a DB entry
-        # REVIEW: Does this actually work as expected?
-        obj = cls.get(id)
-        try:
-            for key, value in dUpdate.items():
-                if hasattr(obj, key):
-                    setattr(obj, key, value)
-
-            db.commit()
-        except Exception:
-            db.rollback()
+    __tablename__ = "version"
+    id = Column(Integer, primary_key=True)
+    version = Column(Integer)
 
 
 # ===========
@@ -510,29 +372,23 @@ class PaymentDetails(BaseMixin, Base):
 class Expenses(BaseMixin, Base):
     """DB Interaction class for Expenses"""
 
-    expense_id = Column(VARCHAR)
+    expense_id = Column(VARCHAR, unique=True)
     date = Column(Date)
     cost = Column(FLOAT)
     comment = Column(VARCHAR)
 
     @classmethod
-    def get_latest_id(cls):
+    def generate_id(cls):
         session = Session()
         obj = session.query(cls).order_by(cls.id.desc()).first()
         if not obj:
             return f"{datetime.datetime.now().year}-{1:03}"
-        # Split the String
         year, id = obj.expense_id.split("-")
-
-        # Check if the Year is still valid
         if int(year) != datetime.now().year:
-            # We need to create an ID with a new year
             new_year = datetime.now().year
-            # also we probably need to start to count from 1 again
             new_id = 1
         else:
             new_year = year
-            # Increment the ID
             new_id = int(id) + 1
 
         return f"{new_year}-{new_id:03}"
@@ -559,7 +415,7 @@ class Invoices_Item(BaseMixin, Base):
 class Invoices(BaseMixin, Base):
     """DB Interaction class for Invoices"""
 
-    invoice_id = Column(VARCHAR)
+    invoice_id = Column(VARCHAR, unique=True)
     date = Column(Date)
     description = Column(VARCHAR)
     invoice_ammount = Column(FLOAT)
@@ -579,23 +435,17 @@ class Invoices(BaseMixin, Base):
     personal = relationship("PersonalDetails", foreign_keys=[personal_id], lazy=False)
 
     @classmethod
-    def get_latest_id(cls):
+    def generate_id(cls):
         session = Session()
         obj = session.query(cls).order_by(cls.id.desc()).first()
         if not obj:
-            return f"{datetime.now().year}-{1:03}"
-        # Split the String
+            return f"{datetime.datetime.now().year}-{1:03}"
         year, id = obj.invoice_id.split("-")
-
-        # Check if the Year is still valid
         if int(year) != datetime.now().year:
-            # We need to create an ID with a new year
             new_year = datetime.now().year
-            # also we probably need to start to count from 1 again
             new_id = 1
         else:
             new_year = year
-            # Increment the ID
             new_id = int(id) + 1
 
         return f"{new_year}-{new_id:03}"
@@ -604,43 +454,28 @@ class Invoices(BaseMixin, Base):
     def get_latest_invoice_id(cls):
         session = Session()
         obj = session.query(cls).order_by(cls.id.desc()).first()
+        return obj.id
 
-    def get_ammount(self):
-        session = Session()
-        # ToDo: Generate function to return all incoive items
-        _items = (
-            session.query(Invoices_Item)
-            .filter(Invoices_Item.parent_id == self.id)
-            .all()
-        )
+    def get_sum(self):
         sum = 0
+        for item in self.items:
+            sum += item.cost * item.count
+        return float(round(sum, 2))
+
+    def get_total(self):
+        sum = self.get_sum()
+        sum_mwst = self.get_sum_mwst()
+        return sum + sum_mwst
+
+    def get_mwst(self):
+        return float(round(self.invoice_mwst, 2))
+
+    def get_sum_mwst(self):
+        sum = self.get_sum()
         mwst = 0
-        sum_mwst = 0
-
-        _dict = {"sum": sum, "mwst": mwst, "sum_mwst": sum_mwst}
-
-        for i in _items:
-            sum += i.cost * i.count
-
         if self.invoice_mwst:
             mwst = self.invoice_mwst / 100 * sum
-            sum_mwst = sum + mwst
-        else:
-            sum_mwst = sum
-
-        _dict["sum"] = float(round(sum, 2))
-        _dict["mwst"] = float(round(mwst, 2))
-        _dict["sum_mwst"] = float(round(sum_mwst, 2))
-
-        return _dict
-
-    def get_items(self):
-        session = Session()
-        return (
-            session.query(Invoices_Item)
-            .filter(Invoices_Item.parent_id == self.id)
-            .all()
-        )
+        return float(round(mwst, 2))
 
 
 # ===========
