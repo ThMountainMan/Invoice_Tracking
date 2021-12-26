@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from datetime import datetime
 
 import sqlalchemy
+from sqlalchemy.engine import Engine
 from sqlalchemy import (
     FLOAT,
     JSON,
@@ -17,6 +18,9 @@ from sqlalchemy import (
     create_engine,
     extract,
     desc,
+    UniqueConstraint,
+    ForeignKeyConstraint,
+    event,
 )
 from sqlalchemy.orm.attributes import QueryableAttribute
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
@@ -44,6 +48,13 @@ def init(config=appconfig, create=False):
 
     # Run the DB Migration if needed
     migration.run_migrations(script_location=appconfig.db_migration, dsn=url)
+
+    # This needs to be added in order to have constraint check
+    @event.listens_for(Engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
 
     engine = create_engine(url, echo=config.echo)
     log.info("connect to database %s", engine.url)
@@ -342,9 +353,13 @@ class PersonalDetails(BaseMixin, Base):
 
     taxnumber = Column(VARCHAR)
 
-    payment_id = Column(Integer, ForeignKey("paymentdetails.id"))
+    payment_id = Column(Integer, ForeignKey("paymentdetails.id", ondelete="RESTRICT"))
     payment_details = relationship(
         "PaymentDetails", foreign_keys=[payment_id], lazy=False
+    )
+
+    ForeignKeyConstraint(
+        ["payment_id"], ["paymentdetails.id"], name="fk_personal_payment_id"
     )
 
 
@@ -376,6 +391,9 @@ class Expenses(BaseMixin, Base):
     date = Column(Date)
     cost = Column(FLOAT)
     comment = Column(VARCHAR)
+
+    # explicit/composite unique constraint.  'name' is optional.
+    UniqueConstraint(expense_id, name="uc_expenses_id")
 
     @classmethod
     def generate_id(cls):
@@ -423,16 +441,29 @@ class Invoices(BaseMixin, Base):
     paydate = Column(Date)
     invoice_data = Column(JSON)
 
-    customer_id = Column(Integer, ForeignKey("customers.id"))
-    jobcode_id = Column(Integer, ForeignKey("jobtypes.id"))
-    agency_id = Column(Integer, ForeignKey("agencys.id"))
-    personal_id = Column(Integer, ForeignKey("personaldetails.id"))
+    customer_id = Column(Integer, ForeignKey("customers.id", ondelete="RESTRICT"))
+    jobcode_id = Column(Integer, ForeignKey("jobtypes.id", ondelete="RESTRICT"))
+    agency_id = Column(Integer, ForeignKey("agencys.id", ondelete="RESTRICT"))
+    personal_id = Column(Integer, ForeignKey("personaldetails.id", ondelete="RESTRICT"))
 
-    items = relationship("Invoices_Item")
+    items = relationship("Invoices_Item", lazy=False)
     customer = relationship("Customers", foreign_keys=[customer_id], lazy=False)
     jobtype = relationship("Jobtypes", foreign_keys=[jobcode_id], lazy=False)
     agency = relationship("Agencys", foreign_keys=[agency_id], lazy=False)
     personal = relationship("PersonalDetails", foreign_keys=[personal_id], lazy=False)
+
+    ForeignKeyConstraint(
+        ["customer_id"], ["customers.id"], name="fk_invoice_customer_id"
+    )
+    ForeignKeyConstraint(["jobcode_id"], ["jobtypes.id"], name="fk_invoice_jobcode_id")
+    ForeignKeyConstraint(["agency_id"], ["agencys.id"], name="fk_invoice_agency_id")
+
+    ForeignKeyConstraint(
+        ["personal_id"], ["personaldetails.id"], name="fk_invoice_personal_id"
+    )
+
+    # explicit/composite unique constraint.  'name' is optional.
+    UniqueConstraint(invoice_id, name="uc_invoices_id")
 
     @classmethod
     def generate_id(cls):
