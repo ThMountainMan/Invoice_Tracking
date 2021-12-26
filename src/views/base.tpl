@@ -41,22 +41,22 @@
       <ul class="navbar-nav mr-auto">
 
         <li class="nav-item">
-          <a class="nav-link" href="/"> Invoices </a>
+          <a class="nav-link" href="/"><i class="fas fa-file-invoice"></i> Invoices </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/expenses"> Expenses </a>
+          <a class="nav-link" href="/expenses"> <i class="far fa-money-bill-alt"></i> Expenses </a>
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Setup Section
+            <i class="fas fa-cogs"></i> Setup Section
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <a class="dropdown-item" href="/personal">Personal Details</a>
-            <a class="dropdown-item" href="/payment">Bank Details</a>
+            <a class="dropdown-item" href="/personal"><i class="fas fa-users-cog"></i> Personal Details</a>
+            <a class="dropdown-item" href="/payment"><i class="fas fa-university"></i> Bank Details</a>
             <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="/customers">Customers</a>
-            <a class="dropdown-item" href="/jobtypes">Jobtypes</a>
-            <a class="dropdown-item" href="/agencys">Agencys</a>
+            <a class="dropdown-item" href="/customers"><i class="fas fa-users"></i> Customers</a>
+            <a class="dropdown-item" href="/jobtypes"><i class="fas fa-user-tie"></i> Jobtypes</a>
+            <a class="dropdown-item" href="/agencys"><i class="fas fa-user-secret"></i></i> Agencys</a>
           </div>
         </li>
         <li class="nav-item">
