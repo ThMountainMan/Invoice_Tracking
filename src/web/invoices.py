@@ -23,12 +23,10 @@ def invoices(year=None):
         container = Container()
         invoices = db.query("invoices", reverse=True, order_by="invoice_id")
         expenses = db.query("expenses")
+
         if year:
             invoices = [res for res in invoices if res.date.year == int(year)]
             expenses = [res for res in expenses if res.date.year == int(year)]
-
-        if not invoices:
-            pass
 
         container.invoices = invoices
         container.expenses = expenses
@@ -51,7 +49,7 @@ def invoices(year=None):
         container.expenses = round(sum_expenses, 2)
         container.profit = round(income - sum_expenses, 2)
 
-    return template("invoicesV2.tpl", **container)
+    return template("invoices.tpl", **container)
 
 
 @post("/invoice/edit")

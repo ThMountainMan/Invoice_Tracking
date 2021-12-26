@@ -42,12 +42,12 @@ if (typeof jQuery === 'undefined') {
             restoreButton: true,
             buttons: {
                 edit: {
-                    class: 'btn btn-sm btn-default',
+                    class: 'btn btn-warning btn-sm',
                     html: '<span class="fas fa-edit"></span>',
                     action: 'edit'
                 },
                 delete: {
-                    class: 'btn btn-sm btn-default',
+                    class: 'btn btn-sm btn-danger',
                     html: '<span class="fas fa-trash-alt"></span>',
                     action: 'delete'
                 },

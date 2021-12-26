@@ -74,26 +74,26 @@
 </body>
 
 <script>
-    //
-    // This Script adds all the years to the Year Selector
-    //
-    var i, currentYear, startYear, endYear, newOption, dropdownYear;
-    var pathArray = window.location.pathname.split('/');
-    dropdownYear = document.getElementById("dropdownYear");
-    currentYear = (new Date()).getFullYear();
-    startYear = 2010;
-    endYear = currentYear;
+    // //
+    // // This Script adds all the years to the Year Selector
+    // //
+    // var i, currentYear, startYear, endYear, newOption, dropdownYear;
+    // var pathArray = window.location.pathname.split('/');
+    // dropdownYear = document.getElementById("dropdownYear");
+    // currentYear = (new Date()).getFullYear();
+    // startYear = 2010;
+    // endYear = currentYear;
 
-    document.getElementById('currentYear').innerHTML = pathArray[2];
+    // document.getElementById('currentYear').innerHTML = pathArray[2];
 
-    for (i = startYear; i <= endYear; i++) {
-        newOption = document.createElement("option");
-        newOption.value = "/invoices/" + i;
-        newOption.label = i;
-        if (i == pathArray[2]) {
-            newOption.selected = true;
-        }
-        dropdownYear.appendChild(newOption);
-    }
+    // for (i = startYear; i <= endYear; i++) {
+    //     newOption = document.createElement("option");
+    //     newOption.value = "/invoices/" + i;
+    //     newOption.label = i;
+    //     if (i == pathArray[2]) {
+    //         newOption.selected = true;
+    //     }
+    //     dropdownYear.appendChild(newOption);
+    // }
 
     </script>

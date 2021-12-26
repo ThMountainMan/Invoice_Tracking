@@ -33,7 +33,9 @@
           <tr class="tableedit-template" style="display: none;">
             <td style="display:none;"></td>
             <td></td>
-            <td><div><input type="date" name="date" required /></div></td>
+            <td>
+              <div><input type="date" name="date" required /></div>
+            </td>
             <td></td>
             <td></td>
           </tr>
@@ -55,6 +57,7 @@
 
 
 <script type="text/javascript">
+
   $('#tableedit').Tabledit({
     url: '/expenses/edit',
     restoreButton: true,
@@ -107,7 +110,9 @@
         if (!date || !cost || !comment) {
           $("#warning").fadeTo(3000, 800).slideUp(800, function () {
             $("#warning").slideUp(800);
+
           });
+
           return false;
         } else {
           return true;
@@ -123,4 +128,8 @@
     clone.removeAttr("class");
     clone.prependTo("table");
   });
+
+
+
+
 </script>
