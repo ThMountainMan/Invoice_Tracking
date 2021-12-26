@@ -3,12 +3,13 @@ Implementing the general bottle setup with the additional feature to support
 a threaded (non blocking) execution
 """
 
-from gevent import monkey
 import logging
 import threading
-import bottle
-from app_config import AppConfig
 
+import bottle
+from gevent import monkey
+
+from config import appconfig as AppConfig
 
 # Apply GEVENT patches to bottle server to enable asynchronous functionality
 monkey.patch_all()
@@ -32,7 +33,7 @@ class ServerThread(threading.Thread):
 
 # @bottle.error(500)
 def _error_handler_500(error):
-    """ Log internal errors and call the default handler. """
+    """Log internal errors and call the default handler."""
     log.error("http error 500:\n%s\n%s", error.exception, error.traceback)
     return bottle.app.default.default_error_handler(error)
 
@@ -42,8 +43,7 @@ def _run(**kwargs):
 
 
 def run(blocking=True):
-    server = bottle.GeventServer(
-        host=AppConfig.web_host, port=AppConfig.web_port)
+    server = bottle.GeventServer(host=AppConfig.web_host, port=AppConfig.web_port)
     kwargs = {
         "server": server,
         "quiet": AppConfig.debug,

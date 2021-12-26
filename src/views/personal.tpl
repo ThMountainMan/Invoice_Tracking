@@ -1,62 +1,293 @@
-<!DOCTYPE html>
-<html lang="en" dir="ltr">
+% setdefault('title', 'Personal Details') % include("base.tpl")
+<div class="container-fluid">
+  <div class="panel-heading">
+    <h1 class="panel-title">
+      {{ title }}
+    </h1>
+  </div>
+  <div class="panel-body">
+    <div class="clearfix">
+      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#create"><i class="fas fa-plus"></i>
+        Add New Personal Details
+      </button>
+      <button type="button" class="btn btn-primary" onClick="window.location.reload();">
+        Reload
+      </button>
+    </div>
+    <br />
 
-<head>
-  <meta charset="utf-8">
-  <title>CCC Tracker</title>
-  <style>
-
-  </style>
-</head>
-
-<body>
-  % include('base.tpl')
-
-  <div class="container-fluid">
-    <h1 class="logo">Personal Data</h1>
-    <br><a href="/personal_add" class="btn btn-primary"> Add New Company / Personal Data </a><br><br>
-    <table class=" table">
+    <table class="table table-hover" id="tableedit">
       <thead class="thead-light">
         <tr>
+          <th style="display: none"></th>
           <th>LABEL</th>
           <th>Name</th>
           <th>Contact Details</th>
           <th>Address</th>
-          <th>Payment Details</th>
-          <th>EDIT</th>
+          <th>Tax#</th>
+          <th>Payment ID</th>
+          <th></th>
         </tr>
       </thead>
-      % for data in input:
-      <tr>
-        <td><strong>{{data.label}}</strong></td>
-        <td>{{data.name}}</td>
-        <td>
-          {{data.mail}}<br>
-          {{data.phone}}
-        </td>
-        <td>
-          {{data.street}}<br>
-          {{data.postcode}}<br>
-          {{data.city}}
-        </td>
-        <td>
-          {{data.payment_details.name}}<br>
-          {{data.payment_details.bank}}<br>
-          {{data.payment_details.IBAN}}<br>
-          {{data.payment_details.BIC}}<br>
-        </td>
-        <td>
-          <button onclick="location.href = '/personal_edit/{{data.id}}';" type="button" class="btn btn-warning btn-sm">EDIT</button>
-          <button onclick="location.href = '/personal_delete/{{data.id}}';" type="button" class="btn btn-danger btn-sm">DELETE</button>
-        </td>
-      </tr>
-      % end
+      <tbody>
+        <tr class="tableedit-template" style="display: none">
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+          <td></td>
+        </tr>
+        % for data in personaldetails:
+        <tr>
+          <td style="display: none">{{ data.id }}</td>
+          <td>
+            <strong>{{ data.label }}</strong>
+          </td>
+          <td>{{ data.name }}</td>
+          <td>
+            {{ data.mail }} <br />
+            {{ data.phone }}
+          </td>
+          <td>
+            {{ data.street }}<br />
+            {{ data.postcode }} {{ data.city }}
+          </td>
+          <td>{{ data.taxnumber }}</td>
+          <td>{{ data.payment_details.label }}</td>
+          <td align="right">
+            <button type="button" class="button btn btn-warning btn-sm" data-toggle="modal" style="margin-right:-25px;"
+              data-target="#showdata_{{ data.id }}"><i class="fas fa-edit"></i></button>
+          </td>
+          </td>
+        </tr>
 
+        <!-- Modal Pop up view for editing purposes -->
+        <div class="modal fade" id="showdata_{{ data.id }}" tabindex="-1" role="dialog"
+          aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLongTitle">
+                  Edit Personal Details "{{ data.label }}"
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+              <div class="modal-body">
+                <form method="post" action="/payment_edit/{{ data.id }}" id="form_{{ data.id }}">
+                  <input type="hidden" name="id" value="{{ data.id }}" />
 
+                  <div class="form-group required">
+                    <b><label class="control-label">LABEL:</label></b>
+                    <input type="text" class="form-control" name="label" value="{{ data.label }}" required />
+                  </div>
+
+                  <div class="form-group required">
+                    <b><label class="control-label">Name:</label></b>
+                    <input type="text" class="form-control" name="name" value="{{ data.name }}" required />
+                  </div>
+
+                  <div class="form-group required">
+                    <b><label class="control-label">Taxnumber:</label></b>
+                    <input type="text" class="form-control" name="taxnumber" value="{{ data.taxnumber }}" required />
+                  </div>
+                  <div class="form-group required">
+                    <b><label for="payment_id">Payment Details</label></b>
+                    <select class="custom-select" name="payment_id" required>
+                      <option selected value="{{ data.payment_id }}">
+                        {{ data.payment_details.label }}
+                      </option>
+                      % for details in payment_data:
+                      <option value={{details.id}}>{{details.label}}</option>
+                      % end
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <b><label class="control-label">E-Mail:</label></b>
+                    <input type="text" class="form-control" name="mail" value="{{ data.mail }}" required />
+                  </div>
+
+                  <div class="form-group required">
+                    <b><label class="control-label">Phone Number:</label></b>
+                    <input type="text" class="form-control" name="phone" value="{{ data.phone }}" required />
+                  </div>
+
+                  <div class="form-group required">
+                    <b><label class="control-label">Street:</label></b>
+                    <input type="text" class="form-control" name="street" value="{{ data.street }}" required />
+                  </div>
+
+                  <div class="form-row">
+                    <div class="col-md-6 mb-3">
+                      <div class="form-group required">
+                        <b><label class="control-label">City:</label></b>
+                        <input type="text" class="form-control" name="city" value="{{ data.city }}" required />
+                      </div>
+                    </div>
+
+                    <div class="col-md-3 mb-3">
+                      <div class="form-group required">
+                        <b><label class="control-label">Postcode:</label></b>
+                        <input type="text" class="form-control" name="postcode" value="{{ data.postcode }}" required />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="modal-footer">
+                    <input type="submit" class="btn btn-primary" value="Save Changes" />
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                      Close
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        % end
+      </tbody>
+    </table>
   </div>
+</div>
 
+<!-- Modal Pop up view for Creating a new input purposes -->
+<div class="modal fade" id="create" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle"
+  aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="exampleModalLongTitle">
+          Create New Personal Details
+        </h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form method="post" action="/payment_edit/{{ data.id }}" id="myForm">
+          <div class="form-group required">
+            <b><label class="control-label">LABEL:</label></b>
+            <input type="text" class="form-control" name="label" required />
+          </div>
 
+          <div class="form-group required">
+            <b><label class="control-label">Name:</label></b>
+            <input type="text" class="form-control" name="name" required />
+          </div>
 
-</body>
+          <div class="form-group required">
+            <b><label class="control-label">Taxnumber:</label></b>
+            <input type="text" class="form-control" name="taxnumber" required />
+          </div>
+          <div class="form-group required">
+            <b><label for="payment_id">Payment Details</label></b>
+            <select class="custom-select" name="payment_id" required>
+              <option selected disabled value="">
+                Please select Bank Details
+              </option>
+              % for details in payment_data:
+              <option value={{details.id}}>{{details.label}}</option>
+              % end
+            </select>
+          </div>
 
-</html>
+          <div class="form-group">
+            <b><label class="control-label">E-Mail:</label></b>
+            <input type="text" class="form-control" name="mail" required />
+          </div>
+
+          <div class="form-group required">
+            <b><label class="control-label">Phone Number:</label></b>
+            <input type="text" class="form-control" name="phone" required />
+          </div>
+
+          <div class="form-group required">
+            <b><label class="control-label">Street:</label></b>
+            <input type="text" class="form-control" name="street" required />
+          </div>
+
+          <div class="form-row">
+            <div class="col-md-6 mb-3">
+              <div class="form-group required">
+                <b><label class="control-label">City:</label></b>
+                <input type="text" class="form-control" name="city" required />
+              </div>
+            </div>
+
+            <div class="col-md-3 mb-3">
+              <div class="form-group required">
+                <b><label class="control-label">Postcode:</label></b>
+                <input type="text" class="form-control" name="postcode" required />
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <input type="submit" class="btn btn-primary" value="Save Changes" />
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">
+              Close
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="text/javascript">
+  $(".table").Tabledit({
+    url: "/personal/edit",
+    restoreButton: true,
+    editButton: false,
+    columns: {
+      identifier: [0, "id"],
+      editable: [],
+    },
+
+    onSuccess: function (data, textStatus, jqXHR, lastEditedRow) {
+      if (data.new_id) {
+        lastEditedRow.attr("id", data.new_id);
+        lastEditedRow
+          .find("span.tabledit-span.tabledit-identifier")
+          .text(data.new_id);
+        lastEditedRow
+          .find("input.tabledit-input.tabledit-identifier")
+          .attr("value", data.new_id);
+      }
+    },
+    onFail: function (jqXHR, textStatus, errorThrown) {
+      console.log("onFail(jqXHR, textStatus, errorThrown)");
+      console.log(jqXHR);
+      console.log(textStatus);
+      console.log(errorThrown);
+      alert(jqXHR.responseText);
+    },
+  });
+
+  $("#addRow").click(function () {
+    var clone = $(".tableedit-template").first().clone();
+    clone.show();
+    clone.removeAttr("class");
+    clone.prependTo("table");
+  });
+
+  $("form").submit(function (e) {
+    e.preventDefault();
+    var form = $(this);
+    var id = form.attr("id");
+    // alert(id + ' form submitted');
+    $.ajax({
+      url: "/personal/edit",
+      type: "post",
+      data: form.serialize() + "&action=edit",
+      success: function () {
+        // alert("worked");
+      },
+    });
+    window.location.reload();
+  });
+</script>

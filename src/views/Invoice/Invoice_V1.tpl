@@ -151,22 +151,22 @@
                     <tr>
                       <td colspan="3"></td>
                       <td class="text-right"><strong>Summe Netto</strong></td>
-                      <td class="text-right"><strong>{{"{:.2f}".format(total)}} €</strong></td>
+                      <td class="text-right"><strong>{{"{:.2f}".format(netto)}} €</strong></td>
                     </tr>
                     % if invoice.invoice_mwst:
                     <tr>
                       <td colspan="3"></td>
                       <td class="text-right"><strong>zzgl. {{invoice.invoice_mwst}} % MwSt.</strong></td>
-                      <td class="text-right"><strong>{{"{:.2f}".format(mwst)}} €</strong></td>
+                      <td class="text-right"><strong>{{"{:.2f}".format(sum_mwst)}} €</strong></td>
                     </tr>
                     %end
                     <tr>
                       <td colspan="3"></td>
                       <td class="text-right"><strong>Rechnugsbetrag</strong></td>
                       % if invoice.invoice_mwst:
-                      <td class="text-right"><strong><big>{{"{:.2f}".format(total_mwst)}} €</big></strong></td>
+                      <td class="text-right"><strong><big>{{"{:.2f}".format(brutto)}} €</big></strong></td>
                       %else:
-                      <td class="text-right"><strong><big>{{"{:.2f}".format(total)}} €</big></strong></td>
+                      <td class="text-right"><strong><big>{{"{:.2f}".format(brutto)}} €</big></strong></td>
                       %end
                     </tr>
                   </tbody>

@@ -1,22 +1,36 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <!--We need to include the Bootstrap project in order to use it in our app-->
 <!--This shuold fulfill all our needs-->
-<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css" integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" integrity="sha384-B0vP5xmATw1+K9KRQjQERJvTumQW0nPEzvF6L/Z6nronJ3oUOFUFpCjEUQouq2+l" crossorigin="anonymous">
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js" integrity="sha384-+YQ4JLhjyBLPDQt//I+STsc9iw4uQqACwlvpslubQzn4u2UU2UFM80nGisd026JF" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-Piv4xVNRyMGpqkS2by6br4gNJ7DXjqk09RmUpJ8jgGtD7zP9yug3goQfGII0yAns" crossorigin="anonymous"></script>
+
+<!-- https://getbootstrap.com/docs/4.6/getting-started/introduction/ -->
 
 
+
+<!-- <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script> -->
 
 <head>
-  <style>
-  </style>
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.7.0/css/all.css"
+      integrity="sha384-lZN37f5QGtY3VHgisS14W3ExzMWZxybE1SJSEsQp9S+oqd12jhcu+A56Ebc1zFSJ" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jqueryui@1.11.1/jquery-ui.min.css">
 </head>
 
 <body>
+ 
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <!-- Tableedit -->
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="static/js/jquery-tabledit/jquery.tabledit.js" ></script>
+  <script src="https://code.jquery.com/ui/1.13.0/jquery-ui.js"></script>
 
+
+
+  
+  
   <nav class="navbar navbar-expand-lg navbar-light bg-light">
     <a class="navbar-brand" href="/">Invoice Tracker</a>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -27,22 +41,22 @@
       <ul class="navbar-nav mr-auto">
 
         <li class="nav-item">
-          <a class="nav-link" href="/"> Invoices </a>
+          <a class="nav-link" href="/"><i class="fas fa-file-invoice"></i> Invoices </a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/expenses"> Expenses </a>
+          <a class="nav-link" href="/expenses"> <i class="far fa-money-bill-alt"></i> Expenses </a>
         </li>
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            Setup Section
+            <i class="fas fa-cogs"></i> Setup Section
           </a>
           <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-            <a class="dropdown-item" href="/personal">Personal Details</a>
-            <a class="dropdown-item" href="/payment">Bank Details</a>
+            <a class="dropdown-item" href="/personal"><i class="fas fa-users-cog"></i> Personal Details</a>
+            <a class="dropdown-item" href="/payment"><i class="fas fa-university"></i> Bank Details</a>
             <div class="dropdown-divider"></div>
-            <a class="dropdown-item" href="/customers">Customers</a>
-            <a class="dropdown-item" href="/jobtypes">Jobtypes</a>
-            <a class="dropdown-item" href="/agencys">Agencys</a>
+            <a class="dropdown-item" href="/customers"><i class="fas fa-users"></i> Customers</a>
+            <a class="dropdown-item" href="/jobtypes"><i class="fas fa-user-tie"></i> Jobtypes</a>
+            <a class="dropdown-item" href="/agencys"><i class="fas fa-user-secret"></i></i> Agencys</a>
           </div>
         </li>
         <li class="nav-item">
@@ -59,7 +73,7 @@
   <br>
 </body>
 <script>
-  $(document).ready(function() {
+  $(document).ready(function () {
     $(".dropdown-toggle").dropdown();
   });
 </script>

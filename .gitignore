@@ -1,4 +1,4 @@
-*.yml
+*.yaml
 *.pyc
 *.db
 *.
@@ -9,6 +9,7 @@
 
 .vscode/
 .venv/
+
 
 _test/
 scripts/

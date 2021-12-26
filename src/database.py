@@ -1,105 +1,304 @@
 # Helper to interact with the Database
 
+import logging
 import os
-
-import sqlalchemy as db
-from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, Date, VARCHAR, FLOAT, JSON
-from sqlalchemy import ForeignKey, extract
-from sqlalchemy.ext.declarative import declared_attr
-
-from app_config import AppConfig
-import db_migration
-
+from contextlib import contextmanager
 from datetime import datetime
 
-import logging
+import sqlalchemy
+from sqlalchemy.engine import Engine
+from sqlalchemy import (
+    FLOAT,
+    JSON,
+    VARCHAR,
+    Column,
+    Date,
+    ForeignKey,
+    Integer,
+    create_engine,
+    extract,
+    desc,
+    UniqueConstraint,
+    ForeignKeyConstraint,
+    event,
+)
+from sqlalchemy.orm.attributes import QueryableAttribute
+from sqlalchemy.ext.declarative import declarative_base, declared_attr
+from sqlalchemy.orm import relationship, sessionmaker
+
+# from app_config import AppConfig
+from config import appconfig
+from db_migration import migration
+
+# TODO: This can be deleted once the integration is finished
+AppConfig = appconfig
 
 # Init the Logger
 log = logging.getLogger(__name__)
 
+Base = declarative_base()
+Session = sessionmaker()
 
-class Database:
-    def __init__(self, config):
-        # Create the connection engine
-        self.config = config
-        self._engine = db.create_engine(
-            self._CreateDbString(), echo=self.config.debug)
-        self._session = sessionmaker(bind=self._engine)
-        self._Session = self._session()
+
+def init(config=appconfig, create=False):
+
+    if appconfig.debug:
+        log.info("enable sql echo logging (debug)")
+    url = f"sqlite:///{config.db_path}\\{config.db_name}.db"
+
+    # Run the DB Migration if needed
+    migration.run_migrations(script_location=appconfig.db_migration, dsn=url)
+
+    # This needs to be added in order to have constraint check
+    @event.listens_for(Engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.close()
+
+    engine = create_engine(url, echo=config.echo)
+    log.info("connect to database %s", engine.url)
+    if create:
+        log.info("create database based on the modelling")
+        Base.metadata.create_all(engine)
+    Session.configure(bind=engine)
+
+
+class NotExists(Exception):
+    """Failure Class for catching errors"""
+
+
+class AvailableDBModels(dict):
+    def register(self, editable=True, admin_rights=False):
+        def _register(cls):
+            self[cls.__tablename__] = cls
+            cls._editable = editable
+            cls._admin_rights = admin_rights
+            return cls
+
+        return _register
+
+    def get_model(self, model):
+        if isinstance(model, str):
+            try:
+                return self[model]
+            except KeyError:
+                raise NotExists(
+                    f"Not able to find corrosponding model for :  {model} !"
+                )
+        return model
+
+
+models = AvailableDBModels()
+
+
+class DbConnection:
+    def __init__(self):
+        self.session = Session()
+        self.created_at = datetime.now()
+        self._within_transaction = False
 
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_value:
+            self.session.rollback()
+        self.session.close()
 
-    def _CreateDbString(self):
-        # In case we have a local DB File
-        if self.config.local:
-            path = self.config.db_path
-            if not path:
-                cur_path = os.path.dirname(os.path.abspath(__file__))
-                path = os.path.join(cur_path, 'db')
-
-            if not os.path.exists(path):
-                os.makedirs(path)
-            return f'sqlite:///{path}//{self.config.db_name}.db?charset=utf8'
-
-        # In Case we want to connect to a remote SQL DB
+    @contextmanager
+    def transaction(self, do_commit=True, do_close=True):
+        """Enter the with block"""
+        assert (
+            self._within_transaction is False
+        ), "Attempt to start a transaction multiple times!"
+        self.begin()
+        try:
+            yield self
+        except:
+            self.rollback()
+            raise
         else:
-            return f"mysql+pymysql://{self.config.db_user}:{self.config.db_pw}@{self.config.db_host}:{self.config.db_port}/{self.config.db_name}?charset=utf8"
+            if do_commit:
+                self.commit()
+        finally:
+            self._within_transaction = False
+            if do_close:
+                self.close()
+        return self
 
-    @ property
-    def connection(self):
-        self._conn = self._engine.connect()
-        return self._conn
+    def begin(self):
+        log.debug("start a new transaction")
+        self._within_transaction = True
+        # self.session.begin_nested()  # establish a savepoint
 
-    @ property
-    def engine(self):
-        return self._engine
+    def _default_commit(self, do_commit):
+        if do_commit is None:
+            do_commit = False if self._within_transaction else True
+        return do_commit
 
-    def ReturnSession(self):
-        return self._Session
+    def get_model(self, model_or_name):
+        return models.get_model(model_or_name)
 
-    def check_db_version(self):
-        pass
+    def execute(self, clause, params=None, do_commit=None, **kwargs):
+        rv = self.session.execute(clause, params=params, **kwargs)
+        if self._default_commit(do_commit):
+            self.commit()
+        return rv
 
-    def db_migration(self):
-        # Run the DB Migration if needed
-        db_migration.run_migrations(
-            script_location="./src/db_migration", dsn=self._CreateDbString())
-
-    def close(self, commit=True):
-        self._session.close()
+    def commit(self):
+        """Store pending changes to the datbase"""
+        log.debug("committing changes to database")
+        self._within_transaction = False
+        self.session.commit()
 
     def rollback(self):
-        self._session.rollback()
+        """Store pending changes to the datbase"""
+        log.debug("rollback pending database changes")
+        self._within_transaction = False
+        self.session.rollback()
+
+    def close(self):
+        log.debug("close database session")
+        assert (
+            self._within_transaction is False
+        ), "About to close a transaction whithout rollback() or commit()"
+        self.session.close()
+
+    def create(self, model, attributes, do_commit=None):
+        """
+        CREATE
+        attributes is a dictionary with model column names and values.
+        """
+        # Create an instance of the class pathing in all the given attributes
+        if isinstance(model, str):
+            model = self.get_model(model)
+        # attributes = self._convert_db_file_objects(attributes)
+        new = model(**attributes)
+        self.add(new, do_commit=do_commit)
+        return new
+
+    def add(self, new, do_commit=None):
+        """
+        Store a model instance in the database.
+        """
+        self.session.add(new)
+        self.session.flush()
+        self.session.refresh(new)
+        if self._default_commit(do_commit):
+            self.commit()
+        return new
+
+    def merge(self, instance, do_commit=None):
+        """
+        Sync changes made to an instance back into the database.
+        """
+        self.session.merge(instance)
+        self.session.flush()
+        if self._default_commit(do_commit):
+            self.commit()
+        return instance
+
+    def detatch(self, instance):
+        self.session.expunge(instance)
+
+    def get(self, model, id):
+        """
+        READ DB entry
+        """
+        model = self.get_model(model)
+        instance = self.session.query(model).get(id)
+        if instance is None:
+            raise NotExists(f"{model.__tablename__} with id={id} does not exist!")
+        return instance
+
+    def update(self, model, id, attributes, do_commit=None):
+        """
+        UPDATE
+
+        attributes is a dictionary with table column names and values.
+        """
+        instance = self.get(model, id)
+        attributes = self._convert_db_file_objects(attributes)
+        for name, value in attributes.items():
+            setattr(instance, name, value)
+        self.merge(instance, do_commit=do_commit)
+        return instance
+
+    def delete(self, model, id, do_commit=None):
+        """
+        DELETE
+
+        Returns True if the db instance with the given ID was deleted.
+        False if it could not be found.
+        """
+        try:
+            instance = self.get(model, id)
+        except NotExists:
+            return False
+        self.session.delete(instance)
+        if self._default_commit(do_commit):
+            self.commit()
+        return True
+
+    def query(
+        self, model, filters=None, offset=None, limit=None, order_by=None, reverse=False
+    ):
+        filters = filters or {}
+        model = self.get_model(model)
+        q = self.session.query(model)
+        for attr, value in filters.items():
+            if attr == "__filter__":
+                # The user provides and own filter statement
+                q = q.filter(value)
+            elif isinstance(value, (list, tuple)):
+                q = q.filter(getattr(model, attr).in_(value))
+            else:
+                q = q.filter(getattr(model, attr) == value)
+        if order_by:
+            if isinstance(order_by, (str, QueryableAttribute)):
+                order_by = [order_by]
+            for stmt in order_by:
+                if isinstance(stmt, str):
+                    stmt = self._get_attribute(stmt, model)
+                if reverse:
+                    stmt = desc(stmt)
+                q = q.order_by(stmt)
+        if offset:
+            q = q.offset(offset)
+        if limit:
+            q = q.limit(limit)
+        return q.all()
+
+    def query_one(self, model, filters):
+        found = self.query(model, filters, limit=1)
+        if found:
+            return found[0]
+        return None
+
+    def _get_attribute(self, text, model):
+        """Expecting string with "model.attrib". Searching the model by it's name and returning it's attribute"""
+        if "." in text:
+            name, text = text.split(".")
+            model = self.get_model(name.strip("'\""))
+        return getattr(model, text)
+
+    def _convert_db_file_objects(self, attributes):
+        conn = None
+        _attributes = {}
+        for attr, value in attributes.items():
+            if hasattr(value, "save"):
+                if conn is None:
+                    conn = self.session.connection()
+                lobject = conn.connection.lobject(0, "rw", 0)
+                value.save(lobject)
+                self.session.commit()
+                value = lobject.oid
+            _attributes[attr] = value
+        return _attributes
 
 
-# =========================================
-# Configuration of the DB Connection Object
-# =========================================
-
-# Define the Base for the Database assignement
-Base = declarative_base()
-# Define a DB session
-dbObject = Database(AppConfig)
-# Check if we need to migrate the DB
-dbObject.db_migration()
-# Create a session for the DB
-session = dbObject.ReturnSession()
-
-# =========================================
-# Definition for DB Interaction
-# =========================================
-
-# ===============================
-# Basic Function definition
-# ===============================
-
-
+@models.register(editable=False)
 class BaseMixin(object):
     """
     Some general Functionality for reusing
@@ -108,84 +307,27 @@ class BaseMixin(object):
     functionality
     """
 
-    @ declared_attr
+    @declared_attr
     def __tablename__(cls):
         return cls.__name__.lower()
 
-    __table_args__ = {'mysql_engine': 'InnoDB'}
-
     id = Column(Integer, primary_key=True)
 
-    @ classmethod
-    def create(cls, obj):
-        # Create a new Entry in the DB
-        # check if the entry is already existant
-        try:
-            session.add(obj)
-            session.commit()
-            return obj.id
-        except Exception as e:
-            session.rollback()
-            log.error(
-                f"Not able to create object in '{cls.__tablename__(cls)}' with the Error:\n{e}")
-        return None
 
-    @ classmethod
-    def delete(cls, id):
-        # Delete Entry based on ID
-        obj = session.query(cls).filter(cls.id == id).first()
-        if not cls.check_relation():
-            session.delete(obj)
-            session.commit()
-        else:
-            return False
+# ===========
+# VERSION
+# ===========
 
-    @ classmethod
-    def check_relation(cls):
-        # Check if we have any relation with this class
-        pass
 
-    @ classmethod
-    def get(cls, id=None, name=None):
-        # Return a specific result
-        if name:
-            result = session.query(cls).filter(cls.name == name).first()
-        elif id:
-            result = session.query(cls).filter(cls.id == id).first()
-        else:
-            result = None
-        # TODO: Enable more Filters for this querry !!!!
-        return result
+@models.register(editable=True)
+class Version(Base):
+    """Version to store the version nr of the DB"""
 
-    @ classmethod
-    def get_all(cls):
-        # Return all entrys in the DB
-        return session.query(cls).all()
+    # TODO: Implement a propper version control !!
 
-    @ classmethod
-    def count(cls):
-        # Return the total count of all entrys
-        return session.query(cls).count()
-
-    @ classmethod
-    def check_link(cls):
-        # TODO: Impement a method that checks if a foreign key is uesd in an
-        # Invoice or not, so that we can delete an object safely
-        pass
-
-    @ classmethod
-    def update(cls, id, dUpdate):
-        # Update a DB entry
-        # REVIEW: Does this actually work as expected?
-        obj = cls.get(id)
-        try:
-            for key, value in dUpdate.items():
-                if hasattr(obj, key):
-                    setattr(obj, key, value)
-
-            session.commit()
-        except Exception:
-            session.rollback()
+    __tablename__ = "version"
+    id = Column(Integer, primary_key=True)
+    version = Column(Integer)
 
 
 # ===========
@@ -193,8 +335,9 @@ class BaseMixin(object):
 # ===========
 
 
+@models.register(editable=True)
 class PersonalDetails(BaseMixin, Base):
-    """ DB Interaction for personal Details """
+    """DB Interaction for personal Details"""
 
     label = Column(VARCHAR)
 
@@ -210,12 +353,19 @@ class PersonalDetails(BaseMixin, Base):
 
     taxnumber = Column(VARCHAR)
 
-    payment_id = Column(Integer, ForeignKey("paymentdetails.id"))
-    payment_details = relationship("PaymentDetails", foreign_keys=[payment_id])
+    payment_id = Column(Integer, ForeignKey("paymentdetails.id", ondelete="RESTRICT"))
+    payment_details = relationship(
+        "PaymentDetails", foreign_keys=[payment_id], lazy=False
+    )
+
+    ForeignKeyConstraint(
+        ["payment_id"], ["paymentdetails.id"], name="fk_personal_payment_id"
+    )
 
 
+@models.register(editable=True)
 class PaymentDetails(BaseMixin, Base):
-    """ DB Interaction for payment Details """
+    """DB Interaction for payment Details"""
 
     label = Column(VARCHAR)
 
@@ -224,69 +374,66 @@ class PaymentDetails(BaseMixin, Base):
     IBAN = Column(VARCHAR)
     BIC = Column(VARCHAR)
 
+    def __str__(self):
+        return str(self.label.decode("utf-8"))
+
 
 # ===========
 # EXPENSES
 # ===========
 
-class Expenses(BaseMixin, Base):
-    """ DB Interaction class for Expenses """
 
-    expense_id = Column(VARCHAR)
+@models.register(editable=True)
+class Expenses(BaseMixin, Base):
+    """DB Interaction class for Expenses"""
+
+    expense_id = Column(VARCHAR, unique=True)
     date = Column(Date)
     cost = Column(FLOAT)
     comment = Column(VARCHAR)
 
+    # explicit/composite unique constraint.  'name' is optional.
+    UniqueConstraint(expense_id, name="uc_expenses_id")
+
     @classmethod
-    def get_latest_id(cls):
+    def generate_id(cls):
+        session = Session()
         obj = session.query(cls).order_by(cls.id.desc()).first()
         if not obj:
-            return f"{datetime.now().year}-{1:03}"
+            return f"{datetime.datetime.now().year}-{1:03}"
+        year, id = obj.expense_id.split("-")
+        if int(year) != datetime.now().year:
+            new_year = datetime.now().year
+            new_id = 1
         else:
-            # Split the String
-            year, id = obj.expense_id.split("-")
+            new_year = year
+            new_id = int(id) + 1
 
-            # Check if the Year is still valid
-            if int(year) != datetime.now().year:
-                # We need to create an ID with a new year
-                new_year = datetime.now().year
-                # also we probably need to start to count from 1 again
-                new_id = 1
-            else:
-                new_year = year
-                # Increment the ID
-                new_id = int(id) + 1
+        return f"{new_year}-{new_id:03}"
 
-            return f"{new_year}-{new_id:03}"
 
-    @ classmethod
-    def get_all(cls, year=None):
-        if year:
-            # Return DB entrys filterd by year
-            return session.query(cls).filter(extract('year', cls.date) == int(year)).all()
-        else:
-            # Return all entrys in the DB
-            return session.query(cls).all()
 # ===========
 # INVOICES
 # ===========
 
 
+@models.register(editable=True)
 class Invoices_Item(BaseMixin, Base):
-    """ DB Interaction class for Invoices Items """
+    """DB Interaction class for Invoices Items"""
 
     description = Column(VARCHAR)
     count = Column(FLOAT)
     cost = Column(FLOAT)
 
-    parent_id = Column(Integer, ForeignKey('invoices.id'))
+    parent_id = Column(Integer, ForeignKey("invoices.id"))
     parent = relationship("Invoices", foreign_keys=[parent_id])
 
 
+@models.register(editable=True)
 class Invoices(BaseMixin, Base):
-    """ DB Interaction class for Invoices """
+    """DB Interaction class for Invoices"""
 
-    invoice_id = Column(VARCHAR)
+    invoice_id = Column(VARCHAR, unique=True)
     date = Column(Date)
     description = Column(VARCHAR)
     invoice_ammount = Column(FLOAT)
@@ -294,87 +441,82 @@ class Invoices(BaseMixin, Base):
     paydate = Column(Date)
     invoice_data = Column(JSON)
 
-    customer_id = Column(Integer, ForeignKey("customers.id"))
-    jobcode_id = Column(Integer, ForeignKey("jobtypes.id"))
-    agency_id = Column(Integer, ForeignKey("agencys.id"))
-    personal_id = Column(Integer, ForeignKey("personaldetails.id"))
+    customer_id = Column(Integer, ForeignKey("customers.id", ondelete="RESTRICT"))
+    jobcode_id = Column(Integer, ForeignKey("jobtypes.id", ondelete="RESTRICT"))
+    agency_id = Column(Integer, ForeignKey("agencys.id", ondelete="RESTRICT"))
+    personal_id = Column(Integer, ForeignKey("personaldetails.id", ondelete="RESTRICT"))
 
-    items = relationship("Invoices_Item")
-    customer = relationship("Customers", foreign_keys=[customer_id])
-    jobtype = relationship("Jobtypes", foreign_keys=[jobcode_id])
-    agency = relationship("Agencys", foreign_keys=[agency_id])
-    personal = relationship("PersonalDetails", foreign_keys=[personal_id])
+    items = relationship("Invoices_Item", lazy=False)
+    customer = relationship("Customers", foreign_keys=[customer_id], lazy=False)
+    jobtype = relationship("Jobtypes", foreign_keys=[jobcode_id], lazy=False)
+    agency = relationship("Agencys", foreign_keys=[agency_id], lazy=False)
+    personal = relationship("PersonalDetails", foreign_keys=[personal_id], lazy=False)
 
-    @ classmethod
-    def get_latest_id(cls):
+    ForeignKeyConstraint(
+        ["customer_id"], ["customers.id"], name="fk_invoice_customer_id"
+    )
+    ForeignKeyConstraint(["jobcode_id"], ["jobtypes.id"], name="fk_invoice_jobcode_id")
+    ForeignKeyConstraint(["agency_id"], ["agencys.id"], name="fk_invoice_agency_id")
+
+    ForeignKeyConstraint(
+        ["personal_id"], ["personaldetails.id"], name="fk_invoice_personal_id"
+    )
+
+    # explicit/composite unique constraint.  'name' is optional.
+    UniqueConstraint(invoice_id, name="uc_invoices_id")
+
+    @classmethod
+    def generate_id(cls):
+        session = Session()
         obj = session.query(cls).order_by(cls.id.desc()).first()
         if not obj:
-            return f"{datetime.now().year}-{1:03}"
+            return f"{datetime.datetime.now().year}-{1:03}"
+        year, id = obj.invoice_id.split("-")
+        if int(year) != datetime.now().year:
+            new_year = datetime.now().year
+            new_id = 1
         else:
-            # Split the String
-            year, id = obj.invoice_id.split("-")
+            new_year = year
+            new_id = int(id) + 1
 
-            # Check if the Year is still valid
-            if int(year) != datetime.now().year:
-                # We need to create an ID with a new year
-                new_year = datetime.now().year
-                # also we probably need to start to count from 1 again
-                new_id = 1
-            else:
-                new_year = year
-                # Increment the ID
-                new_id = int(id) + 1
+        return f"{new_year}-{new_id:03}"
 
-            return f"{new_year}-{new_id:03}"
-
-    @ classmethod
+    @classmethod
     def get_latest_invoice_id(cls):
+        session = Session()
         obj = session.query(cls).order_by(cls.id.desc()).first()
+        return obj.id
 
-    @ classmethod
-    def get_all(cls, year=None):
-        if year:
-            # Return DB entrys filterd by year
-            return session.query(cls).filter(extract('year', cls.date) == int(year)).all()
-        else:
-            # Return all entrys in the DB
-            return session.query(cls).all()
-
-    def get_ammount(self):
-        # ToDo: Generatr function to return all incoive items
-        _items = session.query(Invoices_Item).filter(
-            Invoices_Item.parent_id == self.id).all()
+    def get_sum(self):
         sum = 0
+        for item in self.items:
+            sum += item.cost * item.count
+        return float(round(sum, 2))
+
+    def get_total(self):
+        sum = self.get_sum()
+        sum_mwst = self.get_sum_mwst()
+        return sum + sum_mwst
+
+    def get_mwst(self):
+        return float(round(self.invoice_mwst, 2))
+
+    def get_sum_mwst(self):
+        sum = self.get_sum()
         mwst = 0
-        sum_mwst = 0
-
-        _dict = {'sum': sum, 'mwst': mwst, 'sum_mwst': sum_mwst}
-
-        for i in _items:
-            sum += i.cost * i.count
-
         if self.invoice_mwst:
             mwst = self.invoice_mwst / 100 * sum
-            sum_mwst = sum + mwst
-        else:
-            sum_mwst = sum
+        return float(round(mwst, 2))
 
-        _dict['sum'] = float(round(sum, 2))
-        _dict['mwst'] = float(round(mwst, 2))
-        _dict['sum_mwst'] = float(round(sum_mwst, 2))
 
-        return _dict
-
-    def get_items(self):
-        return session.query(Invoices_Item).filter(
-            Invoices_Item.parent_id == self.id).all()
 # ===========
 # CUSTOMERS
 # ===========
 
 
+@models.register(editable=True)
 class Customers(BaseMixin, Base):
-    """ DB Interaction class for Customers """
+    """DB Interaction class for Customers"""
 
     name = Column(VARCHAR)
     email = Column(VARCHAR)
@@ -390,8 +532,10 @@ class Customers(BaseMixin, Base):
 # AGENCYS
 # ===========
 
+
+@models.register(editable=True)
 class Agencys(BaseMixin, Base):
-    """ DB Interaction class for Agencys """
+    """DB Interaction class for Agencys"""
 
     name = Column(VARCHAR)
     percentage = Column(FLOAT)
@@ -401,8 +545,10 @@ class Agencys(BaseMixin, Base):
 # JOBTYYPES
 # ===========
 
+
+@models.register(editable=True)
 class Jobtypes(BaseMixin, Base):
-    """ DB Interaction class for Jobtypes """
+    """DB Interaction class for Jobtypes"""
 
     name = Column(VARCHAR)
 
