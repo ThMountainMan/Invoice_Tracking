@@ -44,7 +44,7 @@
             <td style="display:none;">{{expense.id}}</td>
             <td>{{expense.expense_id}}</td>
             <td>{{expense.date}}</td>
-            <td>{{expense.cost}}</td>
+            <td>€ {{ "{:.2f}".format(expense.cost) }}</td>
             <td>{{expense.comment}}</td>
           </tr>
           % end
