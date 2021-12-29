@@ -1,7 +1,8 @@
 import logging
 
-from bottle import get, post, redirect, request, response, route, template
 from database import Customers, DbConnection
+from flask import render_template, request
+from server import app
 
 from .authentification import Container
 
@@ -13,43 +14,43 @@ log = logging.getLogger(__name__)
 # =========================================
 
 
-@get("/customers")
+@app.route("/customers")
 def customers():
     container = Container()
     with DbConnection() as db:
         data = db.query(
             "customers", filters={"user_id": container.current_user.id}, order_by="name"
         )
-    return template("customers.tpl", input=data)
+    return render_template("customers.html", input=data)
 
 
-@post("/customers/edit")
-def expense_edit():
+@app.route("/customers/edit", methods=["POST"])
+def customer_edit():
     try:
         with DbConnection() as db:
-            id = request.POST.get("id")
+            id = request.form.get("id")
             # Get the expense we want to edit
-            if request.POST["action"] == "edit":
+            if request.form["action"] == "edit":
                 customer = db.get("customers", id) if id else Customers()
             # delete the selected expense
-            elif request.POST["action"] == "delete":
+            elif request.form["action"] == "delete":
                 db.delete("customers", id)
                 return {"success": True}
             # TODO: How doe we rollback properly ?
-            elif request.POST["action"] == "restore":
+            elif request.form["action"] == "restore":
                 db.rollback()
                 return {"success": True}
             # Collect the Form Data
-            form_data = request.forms
+            form_data = request.form
             # Create or Update the agency
-            customer.name = form_data.get("name").encode("iso-8859-1")
-            customer.contact = form_data.get("contact").encode("iso-8859-1")
-            customer.email = form_data.get("email").encode("iso-8859-1")
+            customer.name = form_data.get("name")
+            customer.contact = form_data.get("contact")
+            customer.email = form_data.get("email")
             customer.phone = form_data.get("phone")
-            customer.street = form_data.get("street").encode("iso-8859-1")
-            customer.postcode = form_data.get("postcode")
-            customer.city = form_data.get("city").encode("iso-8859-1")
-            customer.country = form_data.get("country").encode("iso-8859-1")
+            customer.street = form_data.get("street")
+            customer.formcode = form_data.get("formcode")
+            customer.city = form_data.get("city")
+            customer.country = form_data.get("country")
 
             if customer.id:
                 db.merge(customer)
@@ -57,5 +58,5 @@ def expense_edit():
                 db.add(customer)
             return {"success": True}
     except Exception as e:
-        response.status = 400
+        # response.status = 400
         return str(e)

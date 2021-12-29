@@ -2,9 +2,10 @@ import logging
 
 from database import DbConnection, Expenses
 from dateutil import parser
-from .authentification import Container
-from flask import render_template, request, Response
+from flask import Response, render_template, request
 from server import app
+
+from .authentification import Container
 
 log = logging.getLogger(__name__)
 

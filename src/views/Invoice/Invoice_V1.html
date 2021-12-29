@@ -6,10 +6,7 @@
 		<!--  All snippets are MIT license http://bootdey.com/license -->
 		<title>Invoice</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
-		<link
-			href="http://netdna.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
-			rel="stylesheet"
-		/>
+		<link href="http://netdna.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet" />
 		<style type="text/css">
 			body {
 				margin-top: 20px;
@@ -100,8 +97,7 @@
 								<div class="col-xs-6">
 									<address>
 										<strong>{{invoice.customer.name}}</strong><br /><br />
-										{% if invoice.customer.contact%}
-										{{invoice.customer.contact}}<br />
+										{% if invoice.customer.contact%} {{invoice.customer.contact}}<br />
 										{%endif%} {{invoice.customer.street}}<br />
 										{{invoice.customer.postcode}} {{invoice.customer.city}}<br />
 									</address>
@@ -144,12 +140,8 @@
 												<td><strong>{{loop.index + 1}}</strong></td>
 												<td>{{item.description}}</td>
 												<td class="text-center">{{item.count}}</td>
-												<td class="text-center">
-													{{"{:.2f}".format(item.cost)}} €
-												</td>
-												<td class="text-right">
-													{{"{:.2f}".format(item.cost * item.count)}} €
-												</td>
+												<td class="text-center">{{"{:.2f}".format(item.cost)}} €</td>
+												<td class="text-right">{{"{:.2f}".format(item.cost * item.count)}} €</td>
 											</tr>
 											{% endfor%}
 										</tbody>
@@ -168,9 +160,7 @@
 											<tr>
 												<td colspan="3"></td>
 												<td class="text-right">
-													<strong
-														>zzgl. {{invoice.invoice_mwst}} % MwSt.</strong
-													>
+													<strong>zzgl. {{invoice.invoice_mwst}} % MwSt.</strong>
 												</td>
 												<td class="text-right">
 													<strong>{{"{:.2f}".format(sum_mwst)}} €</strong>
@@ -184,15 +174,11 @@
 												</td>
 												{% if invoice.invoice_mwst%}
 												<td class="text-right">
-													<strong
-														><big>{{"{:.2f}".format(brutto)}} €</big></strong
-													>
+													<strong><big>{{"{:.2f}".format(brutto)}} €</big></strong>
 												</td>
 												{%else:%}
 												<td class="text-right">
-													<strong
-														><big>{{"{:.2f}".format(brutto)}} €</big></strong
-													>
+													<strong><big>{{"{:.2f}".format(brutto)}} €</big></strong>
 												</td>
 												{%endif%}
 											</tr>
@@ -207,8 +193,7 @@
 								<div class="text-center">
 									<address>
 										<span class="small">
-											Bitte überweisen Sie den angegebenen Rechnungsbetrag unter
-											Angabe der Rechnungsnummer innerhalb von
+											Bitte überweisen Sie den angegebenen Rechnungsbetrag unter Angabe der Rechnungsnummer innerhalb von
 											<b>30 Tagen</b> auf das unten angegebene Konto.<br />
 											<h4>Zahlungsdetails:</h4>
 											<strong>Empfänger:</strong>

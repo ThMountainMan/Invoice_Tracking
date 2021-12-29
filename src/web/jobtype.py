@@ -1,7 +1,8 @@
 import logging
 
-from bottle import get, post, request, response, template
 from database import DbConnection, Jobtypes
+from flask import render_template, request
+from server import app
 
 from .authentification import Container
 
@@ -12,35 +13,35 @@ log = logging.getLogger(__name__)
 # =========================================
 
 
-@get("/jobtypes")
-def expenses():
+@app.route("/jobtypes")
+def jobtypes():
     container = Container()
     with DbConnection() as db:
         container.jobtypes = db.query(
             "jobtypes", filters={"user_id": container.current_user.id}, order_by="name"
         )
-    return template("jobtypes.tpl", **container)
+    return render_template("jobtypes.html", **container)
 
 
-@post("/jobtypes/edit")
-def expense_edit():
+@app.route("/jobtypes/edit", methods=["POST"])
+def jobtype_edit():
     try:
         with DbConnection() as db:
             container = Container()
-            id = request.POST.get("id")
+            id = request.form.get("id")
             # Get the expense we want to edit
-            if request.POST["action"] == "edit":
+            if request.form["action"] == "edit":
                 jobtype = db.get("jobtypes", id) if id else Jobtypes()
             # delete the selected expense
-            elif request.POST["action"] == "delete":
+            elif request.form["action"] == "delete":
                 db.delete("jobtypes", id)
                 return {"success": True}
             # TODO: How doe we rollback properly ?
-            elif request.POST["action"] == "restore":
+            elif request.form["action"] == "restore":
                 db.rollback()
                 return {"success": True}
             # Collect the Form Data
-            form_data = request.forms
+            form_data = request.form
             # Create or Update the Jobtypes
             jobtype.name = form_data.get("name")
 
@@ -50,5 +51,5 @@ def expense_edit():
                 db.add(jobtype)
             return {"success": True}
     except Exception as e:
-        response.status = 400
+        # response.status = 400
         return str(e)

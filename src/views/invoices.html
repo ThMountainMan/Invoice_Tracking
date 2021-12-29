@@ -13,7 +13,7 @@
 	<header>
 		{% include 'base.html' %}
 		<div class="container-fluid">
-			{# {% include 'overview.tpl' %} #}
+			{% include 'overview.html' %}
 
 			<br />
 		</div>
@@ -23,32 +23,14 @@
 		<div class="container-fluid">
 			<div class="panel-body">
 				<div class="clearfix">
-					<button
-						type="button"
-						class="btn btn-primary"
-						data-toggle="modal"
-						data-target="#create"
-					>
+					<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#create">
 						<i class="fas fa-plus"> Add New Invoice</i>
 					</button>
-					<button
-						type="button"
-						class="btn btn-primary"
-						onClick="window.location.reload();"
-					>
-						Reload
-					</button>
+					<button type="button" class="btn btn-primary" onClick="window.location.reload();">Reload</button>
 				</div>
 				<br />
 
-				<div
-					class="alert alert-warning collapse alert-dismissible"
-					role="alert"
-					,
-					id="warning"
-				>
-					Please enter a valid date !!
-				</div>
+				<div class="alert alert-warning collapse alert-dismissible" role="alert" , id="warning">Please enter a valid date !!</div>
 
 				<table class="table table-hover" id="tableedit">
 					<thead class="thead-light">
@@ -75,12 +57,7 @@
 
 						<td>
 							<!-- Button to Open the Modal -->
-							<button
-								type="button"
-								class="btn btn-info btn-sm"
-								data-toggle="modal"
-								data-target="#showInvoice_{{ invoice.invoice_id }}"
-							>
+							<button type="button" class="btn btn-info btn-sm" data-toggle="modal" data-target="#showInvoice_{{ invoice.invoice_id }}">
 								<i class="fas fa-hotdog"></i> {{ invoice.invoice_id }}
 							</button>
 
@@ -101,14 +78,7 @@
 						{%else%}
 						<td>
 							<div class="input-group">
-								<input
-									type="date"
-									id="date_{{ invoice.id }}"
-									data-date-format="DD-MM-YYYY"
-									name="date"
-									required
-									onchange="check_payment(event);"
-								/>
+								<input type="date" id="date_{{ invoice.id }}" data-date-format="DD-MM-YYYY" name="date" required onchange="check_payment(event);" />
 								<!-- <input type="date" id="date_{{invoice.id}}" name="date" required onselect="dosomething('date_{{invoice.id}}')"/> -->
 								<button
 									type="button"
@@ -127,11 +97,7 @@
 						<td align="right">
 							<div class="btn-group btn-group-justified" role="group">
 								<div class="btn-group" role="group">
-									<button
-										onclick="window.location.href = '/invoice/download/{{invoice.id}}';"
-										type="button"
-										class="btn btn-primary btn-sm"
-									>
+									<button onclick="window.location.href = '/invoice/download/{{invoice.id}}';" type="button" class="btn btn-primary btn-sm">
 										<i class="fa fa-download"></i>
 									</button>
 								</div>
@@ -162,124 +128,61 @@
 						<div class="modal-dialog modal-dialog-centered" role="document">
 							<div class="modal-content">
 								<div class="modal-header">
-									<h5 class="modal-title" id="exampleModalLongTitle">
-										Edit Invoice Details "{{ invoice.invoice_id }}"
-									</h5>
-									<button
-										type="button"
-										class="close"
-										data-dismiss="modal"
-										aria-label="Close"
-									>
+									<h5 class="modal-title" id="exampleModalLongTitle">Edit Invoice Details "{{ invoice.invoice_id }}"</h5>
+									<button type="button" class="close" data-dismiss="modal" aria-label="Close">
 										<span aria-hidden="true">&times;</span>
 									</button>
 								</div>
 								<div class="modal-body">
-									<form
-										method="post"
-										action="/invoice/edit"
-										id="form_{{ invoice.id }}"
-									>
+									<form method="post" action="/invoice/edit" id="form_{{ invoice.id }}">
 										<input type="hidden" name="id" value="{{ invoice.id }}" />
 
 										<div class="form-group required">
 											<b><label class="control-label">Invoice ID:</label></b>
-											<input
-												type="text"
-												class="form-control"
-												name="invoice_id"
-												required
-												readonly="readonly"
-												value="{{ invoice.invoice_id }}"
-											/>
+											<input type="text" class="form-control" name="invoice_id" required readonly="readonly" value="{{ invoice.invoice_id }}" />
 										</div>
 
 										<div class="form-group required">
-											<b
-												><label class="control-label"
-													>Personal / Bank Details:</label
-												></b
-											>
-											<select
-												id="personal_id"
-												class="form-control"
-												name="personal_id"
-												required
-											>
-												<option selected value="{{ invoice.personal_id }}">
-													{{ invoice.personal.label }}
-												</option>
+											<b><label class="control-label">Personal / Bank Details:</label></b>
+											<select id="personal_id" class="form-control" name="personal_id" required>
+												<option selected value="{{ invoice.personal_id }}">{{ invoice.personal.label }}</option>
 												{% for person in personas%}
-												<option value="{{ person.id }}">
-													{{ person.label }}
-												</option>
+												<option value="{{ person.id }}">{{ person.label }}</option>
 												{% endfor%}
 											</select>
 										</div>
 
 										<div class="form-group required">
 											<b><label class="control-label">Invoice Date:</label></b>
-											<input
-												type="date"
-												id="date"
-												class="form-control"
-												name="date"
-												required
-												value="{{ invoice.date }}"
-											/>
+											<input type="date" id="date" class="form-control" name="date" required value="{{ invoice.date }}" />
 										</div>
 
 										<div class="form-group required">
 											<b><label class="control-label">Customer:</label></b>
-											<select
-												id="customer_id"
-												class="form-control"
-												name="customer_id"
-												required
-											>
-												<option selected value="{{ invoice.customer_id }}">
-													{{ invoice.customer.name }}
-												</option>
+											<select id="customer_id" class="form-control" name="customer_id" required>
+												<option selected value="{{ invoice.customer_id }}">{{ invoice.customer.name }}</option>
 												{% for customer in customers%}
-												<option value="{{ customer.id }}">
-													{{ customer.name }}
-												</option>
+												<option value="{{ customer.id }}">{{ customer.name }}</option>
 												{% endfor%}
 											</select>
 										</div>
 
 										<div class="form-group required">
 											<b><label class="control-label">Jobtype</label></b>
-											<select
-												id="jobcode_id"
-												class="form-control"
-												name="jobcode_id"
-												required
-											>
-												<option selected value="{{ invoice.jobcode_id }}">
-													{{ invoice.jobtype.name }}
-												</option>
+											<select id="jobcode_id" class="form-control" name="jobcode_id" required>
+												<option selected value="{{ invoice.jobcode_id }}">{{ invoice.jobtype.name }}</option>
 												{% for jobtype in jobtypes%}
-												<option value="{{ jobtype.id }}">
-													{{ jobtype.name }}
-												</option>
+												<option value="{{ jobtype.id }}">{{ jobtype.name }}</option>
 												{% endfor%}
 											</select>
 										</div>
 
 										<div class="form-group required">
 											<b><label class="control-label">Agency:</label></b>
-											<select
-												id="agency_id"
-												class="form-control"
-												name="agency_id"
-												required
-											>
+											<select id="agency_id" class="form-control" name="agency_id" required>
 												<option value="None">--</option>
 												{% for agency in agencys%}
-												<option value="{{ agency.id }}">
-													{{ agency.name }}
-												</option>
+												<option value="{{ agency.id }}">{{ agency.name }}</option>
 												{%endfor%}
 											</select>
 										</div>
@@ -298,73 +201,35 @@
 													required
 													value="{{ invoice.invoice_mwst }}"
 												/>
-												<span class="input-group-text" id="basic-addon1"
-													>%</span
-												>
+												<span class="input-group-text" id="basic-addon1">%</span>
 											</div>
 										</div>
 
-										<div
-											class="form-group required invoice"
-											id="otherFieldGroupDiv"
-											name="Test123"
-										>
+										<div class="form-group required invoice" id="otherFieldGroupDiv" name="Test123">
 											<br />
 											<h5>Invoice Details:</h5>
 											<br />
 											<div id="itemlist2" class="itemlist2">
 												{% for item in invoice.items %}
 
-												<input
-													type="hidden"
-													name="item_id"
-													value="{{ item.id }}"
-												/>
+												<input type="hidden" name="item_id" value="{{ item.id }}" />
 
 												<div class="row">
 													<div class="col-6">
-														<b
-															><label class="control-label"
-																>Item Count:</label
-															></b
-														>
-														<input
-															type="number"
-															class="form-control w-100"
-															name="count"
-															min="1"
-															required
-															value="{{ item.count }}"
-														/>
+														<b><label class="control-label">Item Count:</label></b>
+														<input type="number" class="form-control w-100" name="count" min="1" required value="{{ item.count }}" />
 													</div>
 													<div class="col-6">
 														<b><label class="control-label">Cost:</label></b>
 														<div class="input-group-prepend">
-															<input
-																type="number"
-																class="form-control w-100"
-																name="cost"
-																required
-																value="{{ item.cost }}"
-															/>
-															<span class="input-group-text" id="basic-addon1"
-																>€</span
-															>
+															<input type="number" class="form-control w-100" name="cost" required value="{{ item.cost }}" />
+															<span class="input-group-text" id="basic-addon1">€</span>
 														</div>
 													</div>
 
 													<div class="col-12">
-														<b
-															><label class="control-label"
-																>Description:</label
-															></b
-														>
-														<textarea
-															class="form-control w-100"
-															name="description"
-															rows=" 3"
-															required
-														>
+														<b><label class="control-label">Description:</label></b>
+														<textarea class="form-control w-100" name="description" rows=" 3" required>
                                                         {{ item.description }}
                                                             </textarea
 														>
@@ -383,18 +248,8 @@
                                     </div><br> -->
 
 										<div class="modal-footer">
-											<input
-												type="submit"
-												class="btn btn-primary"
-												value="Save Changes"
-											/>
-											<button
-												type="button"
-												class="btn btn-secondary"
-												data-dismiss="modal"
-											>
-												Close
-											</button>
+											<input type="submit" class="btn btn-primary" value="Save Changes" />
+											<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
 										</div>
 									</form>
 								</div>
@@ -403,49 +258,28 @@
 					</div>
 
 					<!-- The Modal -->
-					<div
-						class="modal fade bd-example-modal-xl"
-						id="showInvoice_{{ invoice.invoice_id }}"
-					>
+					<div class="modal fade bd-example-modal-xl" id="showInvoice_{{ invoice.invoice_id }}">
 						<div class="modal-dialog modal-xl">
 							<div class="modal-content">
 								<!-- Modal Header -->
 								<div class="modal-header">
-									<h4 class="modal-title">
-										Invoice Details for: {{ invoice.invoice_id }}
-									</h4>
-									<button type="button" class="close" data-dismiss="modal">
-										&times;
-									</button>
+									<h4 class="modal-title">Invoice Details for: {{ invoice.invoice_id }}</h4>
+									<button type="button" class="close" data-dismiss="modal">&times;</button>
 								</div>
 
 								<!-- Modal body -->
 								<div class="modal-body">
 									<!-- <iframe src='/invoice/display/{{invoice.id}}' width="100%" height="1000" frameborder="0"
                                     style="border:0" allowfullscreen></iframe> -->
-									<embed
-										src="/invoice/display/{{ invoice.id }}"
-										width="100%"
-										height="1000"
-									/>
+									<embed src="/invoice/display/{{ invoice.id }}" width="100%" height="1000" />
 								</div>
 
 								<!-- Modal footer -->
 								<div class="modal-footer">
-									<button
-										onclick="window.location.href = '/invoice/download/{{invoice.id}}';"
-										type="button"
-										class="btn btn-primary"
-									>
+									<button onclick="window.location.href = '/invoice/download/{{invoice.id}}';" type="button" class="btn btn-primary">
 										<i class="fa fa-download"></i> DOWNLAOD
 									</button>
-									<button
-										type="button"
-										class="btn btn-danger"
-										data-dismiss="modal"
-									>
-										Close
-									</button>
+									<button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
 								</div>
 							</div>
 						</div>
@@ -458,26 +292,12 @@
 
 		{%if invoices%}
 		<!-- Add a new Invoice -->
-		<div
-			class="modal fade"
-			id="create"
-			tabindex="0"
-			role="dialog"
-			aria-labelledby="exampleModalCenterTitle"
-			aria-hidden="true"
-		>
+		<div class="modal fade" id="create" tabindex="0" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
 			<div class="modal-dialog modal-dialog-centered" role="document">
 				<div class="modal-content">
 					<div class="modal-header">
-						<h5 class="modal-title" id="exampleModalLongTitle">
-							Add a New Invoice"
-						</h5>
-						<button
-							type="button"
-							class="close"
-							data-dismiss="modal"
-							aria-label="Close"
-						>
+						<h5 class="modal-title" id="exampleModalLongTitle">Add a New Invoice"</h5>
+						<button type="button" class="close" data-dismiss="modal" aria-label="Close">
 							<span aria-hidden="true">&times;</span>
 						</button>
 					</div>
@@ -487,55 +307,26 @@
 
 							<div class="form-group">
 								<b><label class="control-label">Invoice ID:</label></b>
-								<input
-									disabled
-									type="text"
-									class="form-control"
-									name="invoice_id"
-									readonly="readonly"
-									value="{{ invoices[0].generate_id() }}"
-								/>
+								<input disabled type="text" class="form-control" name="invoice_id" readonly="readonly" value="{{ invoices[0].generate_id() }}" />
 							</div>
 
 							<div class="form-group required">
-								<b
-									><label class="control-label"
-										>Personal / Bank Details:</label
-									></b
-								>
-								<select
-									id="personal_id"
-									class="form-control"
-									name="personal_id"
-									required
-								>
+								<b><label class="control-label">Personal / Bank Details:</label></b>
+								<select id="personal_id" class="form-control" name="personal_id" required>
 									{% for person in personas %}
-									<option value="{{ person.id }}">
-										{{ person.label.upper() }}
-									</option>
+									<option value="{{ person.id }}">{{ person.label.upper() }}</option>
 									{%endfor%}
 								</select>
 							</div>
 
 							<div class="form-group required">
 								<b><label class="control-label">Invoice Date:</label></b>
-								<input
-									type="date"
-									id="date"
-									class="form-control"
-									name="date"
-									required
-								/>
+								<input type="date" id="date" class="form-control" name="date" required />
 							</div>
 
 							<div class="form-group required">
 								<b><label class="control-label">Customer:</label></b>
-								<select
-									id="customer_id"
-									class="form-control"
-									name="customer_id"
-									required
-								>
+								<select id="customer_id" class="form-control" name="customer_id" required>
 									{% for customer in customers %}
 									<option value="{{ customer.id }}">{{ customer.name }}</option>
 									{%endfor%}
@@ -544,12 +335,7 @@
 
 							<div class="form-group required">
 								<b><label class="control-label">Jobtype</label></b>
-								<select
-									id="jobcode_id"
-									class="form-control"
-									name="jobcode_id"
-									required
-								>
+								<select id="jobcode_id" class="form-control" name="jobcode_id" required>
 									{% for jobtype in jobtypes %}
 									<option value="{{ jobtype.id }}">{{ jobtype.name }}</option>
 									{%endfor%}
@@ -558,12 +344,7 @@
 
 							<div class="form-group required">
 								<b><label class="control-label">Agency:</label></b>
-								<select
-									id="agency_id"
-									class="form-control"
-									name="agency_id"
-									required
-								>
+								<select id="agency_id" class="form-control" name="agency_id" required>
 									<option value="None">--</option>
 									{% for agency in agencys %}
 									<option value="{{ agency.id }}">{{ agency.name }}</option>
@@ -574,25 +355,12 @@
 							<div class="form-group required">
 								<b><label class="control-label">Mwst.:</label></b>
 								<div class="input-group-prepend">
-									<input
-										type="number"
-										id="mwst"
-										class="form-control"
-										name="mwst"
-										min="0"
-										max="20"
-										value="19"
-										required
-									/>
+									<input type="number" id="mwst" class="form-control" name="mwst" min="0" max="20" value="19" required />
 									<span class="input-group-text" id="basic-addon1">%</span>
 								</div>
 							</div>
 
-							<div
-								class="form-group required invoice"
-								id="otherFieldGroupDiv"
-								name="Test123"
-							>
+							<div class="form-group required invoice" id="otherFieldGroupDiv" name="Test123">
 								<br />
 								<h5>Invoice Details:</h5>
 								<br />
@@ -602,38 +370,19 @@
 									<div class="row">
 										<div class="col-6">
 											<b><label class="control-label">Item Count:</label></b>
-											<input
-												type="number"
-												class="form-control w-100"
-												name="count"
-												onkeypress="return event.charCode >= 48"
-												min="1"
-												required
-											/>
+											<input type="number" class="form-control w-100" name="count" onkeypress="return event.charCode >= 48" min="1" required />
 										</div>
 										<div class="col-6">
 											<b><label class="control-label">cost:</label></b>
 											<div class="input-group-prepend">
-												<input
-													type="number"
-													class="form-control w-100"
-													name="cost"
-													required
-												/>
-												<span class="input-group-text" id="basic-addon1"
-													>€</span
-												>
+												<input type="number" class="form-control w-100" name="cost" required />
+												<span class="input-group-text" id="basic-addon1">€</span>
 											</div>
 										</div>
 
 										<div class="col-12">
 											<b><label class="control-label">Description:</label></b>
-											<textarea
-												class="form-control w-100"
-												name="description"
-												rows=" 3"
-												required
-											></textarea>
+											<textarea class="form-control w-100" name="description" rows=" 3" required></textarea>
 										</div>
 									</div>
 									<br />
@@ -641,38 +390,19 @@
 									<div id="newItem" class="row" hidden>
 										<div class="col-6">
 											<b><label class="control-label">Item Count:</label></b>
-											<input
-												type="number"
-												class="form-control w-100"
-												name="count"
-												onkeypress="return event.charCode >= 48"
-												min="1"
-												required
-											/>
+											<input type="number" class="form-control w-100" name="count" onkeypress="return event.charCode >= 48" min="1" required />
 										</div>
 										<div class="col-6">
 											<b><label class="control-label">cost:</label></b>
 											<div class="input-group-prepend">
-												<input
-													type="number"
-													class="form-control w-100"
-													name="cost"
-													required
-												/>
-												<span class="input-group-text" id="basic-addon1"
-													>€</span
-												>
+												<input type="number" class="form-control w-100" name="cost" required />
+												<span class="input-group-text" id="basic-addon1">€</span>
 											</div>
 										</div>
 
 										<div class="col-12">
 											<b><label class="control-label">Description:</label></b>
-											<textarea
-												class="form-control w-100"
-												name="description"
-												rows=" 3"
-												required
-											></textarea>
+											<textarea class="form-control w-100" name="description" rows=" 3" required></textarea>
 										</div>
 									</div>
 								</div>
@@ -680,33 +410,14 @@
 							</div>
 
 							<div id="newRow">
-								<button id="additem" type="button" class="btn btn-info">
-									Additional Item
-								</button>
-								<button
-									disabled
-									id="removeitem"
-									type="button"
-									class="btn btn-danger"
-								>
-									Remove
-								</button>
+								<button id="additem" type="button" class="btn btn-info">Additional Item</button>
+								<button disabled id="removeitem" type="button" class="btn btn-danger">Remove</button>
 							</div>
 							<br />
 
 							<div class="modal-footer">
-								<input
-									type="submit"
-									class="btn btn-primary"
-									value="Save Changes"
-								/>
-								<button
-									type="button"
-									class="btn btn-secondary"
-									data-dismiss="modal"
-								>
-									Close
-								</button>
+								<input type="submit" class="btn btn-primary" value="Save Changes" />
+								<button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
 							</div>
 						</form>
 					</div>
@@ -729,12 +440,8 @@
 			onSuccess: function (data, textStatus, jqXHR, lastEditedRow) {
 				if (data.new_id) {
 					lastEditedRow.attr("id", data.new_id);
-					lastEditedRow
-						.find("span.tabledit-span.tabledit-identifier")
-						.text(data.new_id);
-					lastEditedRow
-						.find("input.tabledit-input.tabledit-identifier")
-						.attr("value", data.new_id);
+					lastEditedRow.find("span.tabledit-span.tabledit-identifier").text(data.new_id);
+					lastEditedRow.find("input.tabledit-input.tabledit-identifier").attr("value", data.new_id);
 				}
 			},
 			onFail: function (jqXHR, textStatus, errorThrown) {

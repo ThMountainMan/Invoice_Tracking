@@ -1,8 +1,9 @@
 import json
 import logging
 
-from bottle import get, post, request, response, template, put, redirect
 from database import DbConnection, PaymentDetails, PersonalDetails
+from flask import render_template, request
+from server import app
 
 from .authentification import Container
 
@@ -14,7 +15,7 @@ log = logging.getLogger(__name__)
 # =========================================
 
 
-@get("/personal")
+@app.route("/personal")
 def personal():
     container = Container()
     with DbConnection() as db:
@@ -29,34 +30,34 @@ def personal():
             [[p] for i, p in payment_options.items()]
         )
 
-    return template("personal.tpl", **container)
+    return render_template("personal.html", **container)
 
 
-@post("/personal/edit")
+@app.route("/personal/edit", methods=["POST"])
 def personal_edit():
     try:
         with DbConnection() as db:
-            id = request.POST.get("id")
+            id = request.form.get("id")
             # Get the expense we want to edit
-            if request.POST["action"] == "edit":
+            if request.form["action"] == "edit":
                 personal = db.get("personaldetails", id) if id else PersonalDetails()
             # delete the selected expense
-            elif request.POST["action"] == "delete":
+            elif request.form["action"] == "delete":
                 db.delete("personaldetails", id)
                 return {"success": True}
             # TODO: How doe we rollback properly ?
-            elif request.POST["action"] == "restore":
+            elif request.form["action"] == "restore":
                 db.rollback()
                 return {"success": True}
             # Collect the Form Data
-            form_data = request.forms
+            form_data = request.form
             # Create or Update the agency
-            personal.label = form_data.get("label").encode("iso-8859-1")
-            personal.name = form_data.get("name").encode("iso-8859-1")
-            personal.street = form_data.get("street").encode("iso-8859-1")
+            personal.label = form_data.get("label")
+            personal.name = form_data.get("name")
+            personal.street = form_data.get("street")
             personal.postcode = form_data.get("postcode")
-            personal.city = form_data.get("city").encode("iso-8859-1")
-            personal.mail = form_data.get("mail").encode("iso-8859-1")
+            personal.city = form_data.get("city")
+            personal.mail = form_data.get("mail")
             personal.phone = form_data.get("phone")
             personal.payment_id = int(form_data.get("payment_id"))
             personal.taxnumber = form_data.get("taxnumber")
@@ -67,7 +68,7 @@ def personal_edit():
                 db.add(personal)
             return {"success": True}
     except Exception as e:
-        response.status = 400
+        # response.status = 400
         return str(e)
 
 
@@ -76,29 +77,29 @@ def personal_edit():
 # =========================================
 
 
-@get("/payment")
+@app.route("/payment")
 def payment():
     container = Container()
     with DbConnection() as db:
-        data = db.query(
+        container.paymentdetails = db.query(
             "paymentdetails",
             filters={"user_id": container.current_user.id},
             order_by="label",
         )
-    return template("payment.tpl", input=data)
+    return render_template("payment.html", **container)
 
 
-@post("/payment_edit/<id>")
-@post("/payment_edit")
+@app.route("/payment_edit/<id>", methods=["POST"])
+@app.route("/payment_edit", methods=["POST"])
 def payment_edit(id=None):
     try:
         with DbConnection() as db:
             # get the caller id
-            id = request.POST.get("id")
+            id = request.form.get("id")
 
             # delete the selected expense
-            if "action" in request.POST.keys():
-                if request.POST["action"] == "delete":
+            if "action" in request.form.keys():
+                if request.form["action"] == "delete":
                     db.delete("paymentdetails", id)
                     return {"success": True}
 
@@ -106,13 +107,13 @@ def payment_edit(id=None):
             paymentdetails = db.get("paymentdetails", id) if id else PaymentDetails()
 
             # get the Form Data
-            form_data = request.forms
+            form_data = request.form
             # Create or Update the agency
-            paymentdetails.label = form_data.label.encode("iso-8859-1")
-            paymentdetails.name = form_data.name.encode("iso-8859-1")
-            paymentdetails.bank = form_data.bank.encode("iso-8859-1")
-            paymentdetails.IBAN = form_data.IBAN
-            paymentdetails.BIC = form_data.BIC
+            paymentdetails.label = form_data.get("label")
+            paymentdetails.name = form_data.get("name")
+            paymentdetails.bank = form_data.get("bank")
+            paymentdetails.IBAN = form_data.get("IBAN")
+            paymentdetails.BIC = form_data.get("BIC")
             if paymentdetails.id:
                 db.merge(paymentdetails)
             else:
@@ -120,5 +121,5 @@ def payment_edit(id=None):
             return {"success": True}
 
     except Exception as e:
-        response.status = 400
+        # response.status = 400
         return str(e)

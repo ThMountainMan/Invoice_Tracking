@@ -5,7 +5,6 @@ import logging
 import os
 
 import flask
-from bottle import static_file
 from config import appconfig
 from server import app
 
@@ -33,6 +32,6 @@ def export_csv(year=None):
     pass
 
 
-@app.route("/static/<filepath>")
-def server_static(filepath):
-    return static_file(filepath, root=os.path.join(os.path.dirname(__file__), "static"))
+# @app.route("/static/<filepath>")
+# def server_static(filepath):
+#     return static_file(filepath, root=os.path.join(os.path.dirname(__file__), "static"))

@@ -1,7 +1,8 @@
 import logging
 
-from bottle import get, post, request, response, template
 from database import Agencys, DbConnection
+from flask import render_template, request
+from server import app
 
 from .authentification import Container
 
@@ -13,35 +14,35 @@ log = logging.getLogger(__name__)
 # =========================================
 
 
-@get("/agencys")
-def expenses():
+@app.route("/agencys")
+def agencys():
     container = Container()
     with DbConnection() as db:
 
         container.agencys = db.query(
             "agencys", filters={"user_id": container.current_user.id}, order_by="name"
         )
-    return template("agencys.tpl", **container)
+    return render_template("agencys.html", **container)
 
 
-@post("/agencys/edit")
-def expense_edit():
+@app.route("/agencys/edit", methods=["POST"])
+def agency_edit():
     try:
         with DbConnection() as db:
-            id = request.POST.get("id")
+            id = request.form.get("id")
             # Get the expense we want to edit
-            if request.POST["action"] == "edit":
+            if request.form["action"] == "edit":
                 agency = db.get("agencys", id) if id else Agencys()
             # delete the selected expense
-            elif request.POST["action"] == "delete":
+            elif request.form["action"] == "delete":
                 db.delete("agencys", id)
                 return {"success": True}
             # TODO: How doe we rollback properly ?
-            elif request.POST["action"] == "restore":
+            elif request.form["action"] == "restore":
                 db.rollback()
                 return {"success": True}
             # Collect the Form Data
-            form_data = request.forms
+            form_data = request.form
             # Create or Update the agency
             agency.name = form_data.get("name")
             agency.percentage = form_data.get("percentage")
@@ -52,5 +53,5 @@ def expense_edit():
                 db.add(agency)
             return {"success": True}
     except Exception as e:
-        response.status = 400
+        # response.status = 400
         return str(e)

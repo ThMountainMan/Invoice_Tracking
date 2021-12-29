@@ -2,10 +2,12 @@
 Export the Data to several ouputs
 """
 
-import pdfkit
-import os
-from config import appconfig as AppConfig
 import logging
+import os
+
+import pdfkit
+
+from config import appconfig as AppConfig
 
 log = logging.getLogger(__name__)
 

@@ -6,7 +6,6 @@ from contextlib import contextmanager
 from datetime import datetime
 
 import sqlalchemy
-from sqlalchemy.engine import Engine
 from sqlalchemy import (
     FLOAT,
     JSON,
@@ -14,17 +13,18 @@ from sqlalchemy import (
     Column,
     Date,
     ForeignKey,
-    Integer,
-    create_engine,
-    extract,
-    desc,
-    UniqueConstraint,
     ForeignKeyConstraint,
+    Integer,
+    UniqueConstraint,
+    create_engine,
+    desc,
     event,
+    extract,
 )
-from sqlalchemy.orm.attributes import QueryableAttribute
+from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm.attributes import QueryableAttribute
 from sqlalchemy.sql.sqltypes import String
 
 # from app_config import AppConfig
@@ -404,7 +404,7 @@ class PaymentDetails(BaseMixin, Base):
     user_id = Column(Integer, ForeignKey("user.id"))
 
     def __str__(self):
-        return str(self.label.decode("utf-8"))
+        return str(self.label)
 
 
 # ===========
