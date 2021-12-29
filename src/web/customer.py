@@ -3,6 +3,8 @@ import logging
 from bottle import get, post, redirect, request, response, route, template
 from database import Customers, DbConnection
 
+from .authentification import Container
+
 log = logging.getLogger(__name__)
 
 
@@ -13,8 +15,11 @@ log = logging.getLogger(__name__)
 
 @get("/customers")
 def customers():
+    container = Container()
     with DbConnection() as db:
-        data = db.query("customers", order_by="name")
+        data = db.query(
+            "customers", filters={"user_id": container.current_user.id}, order_by="name"
+        )
     return template("customers.tpl", input=data)
 
 

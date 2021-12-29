@@ -43,7 +43,7 @@ class AppConfig(globconf.Config):
 
     # invoices
     # Settings related to the webserver
-    path = root_dir("src")
+    invoice_path = root_dir("Invoices")
 
 
 def read_config(path):

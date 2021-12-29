@@ -20,7 +20,7 @@ def export_to_pdf(source, InvoiceData):
     YEAR = InvoiceData.date.year
     NAME = InvoiceData.personal.name
 
-    FilePath = os.path.join(AppConfig.path, str(YEAR))
+    FilePath = os.path.join(AppConfig.invoice_path, str(YEAR))
     FileName = f"Invoice_{NAME.replace(' ', '_')}__{ID}.pdf"
 
     log.info(f"Creating Invoice : {FileName} in : {FilePath} ...")

@@ -3,7 +3,7 @@ import logging
 from bottle import get, post, request, response, template
 from database import Agencys, DbConnection
 
-from .helper import Container
+from .authentification import Container
 
 log = logging.getLogger(__name__)
 
@@ -15,9 +15,12 @@ log = logging.getLogger(__name__)
 
 @get("/agencys")
 def expenses():
+    container = Container()
     with DbConnection() as db:
-        container = Container()
-        container.agencys = db.query("agencys", order_by="name")
+
+        container.agencys = db.query(
+            "agencys", filters={"user_id": container.current_user.id}, order_by="name"
+        )
     return template("agencys.tpl", **container)
 
 

@@ -40,47 +40,41 @@
                 <thead class="thead-light">
                     <tr>
                         <th style="display: none"></th>
-                        <th>Invoide ID</th>
+                        <th>Invoice ID</th>
                         <th>Invoice Date</th>
                         <th>Customer Name</th>
                         <th>Job Type</th>
-                        <th>count</th>
+                        <th>Total Amoount</th>
                         <th>Paydate</th>
                         <th></th>
                     </tr>
                 </thead>
 
-                % for invoice in invoices:
-                % if invoice.paydate:
+                % for invoice in invoices: 
+                    % if invoice.paydate:
                 <tr class="table-success">
                     % else:
-             <tr class="table-warning">
-% end
+                <tr class="table-warning">
+                    % end
                     <td style="display: none">{{ invoice.id }}</td>
-                    
 
                     <td>
-
                         <!-- Button to Open the Modal -->
                         <button type="button" class="btn btn-info btn-sm" data-toggle="modal"
-                            data-target="#showInvoice_{{invoice.invoice_id}}">
-                            <i class="fas fa-hotdog"></i> {{invoice.invoice_id}}
+                            data-target="#showInvoice_{{ invoice.invoice_id }}">
+                            <i class="fas fa-hotdog"></i> {{ invoice.invoice_id }}
                         </button>
-
-
-
-
-
 
                         <!-- <button type="button" class="btn btn-info btn-sm"
                             onclick="window.location.href = '/invoice/display/{{invoice.id}}';">
                             <i class="fas fa-hotdog"></i> {{invoice.invoice_id}} </button> -->
-
                     </td>
                     <td>{{ invoice.date }}</td>
                     <td>{{ invoice.customer.name.rstrip() }}</td>
                     <td>{{ invoice.jobtype.name.rstrip() }}</td>
-                    <td><b> € {{ "{:.2f}".format(invoice.get_total()) }}</b></td>
+                    <td>
+                        <b> € {{ "{:.2f}".format(invoice.get_total()) }}</b>
+                    </td>
 
                     % if invoice.paydate:
                     <td>{{ invoice.paydate }}</td>
@@ -88,11 +82,11 @@
                     %else:
                     <td>
                         <div class="input-group">
-                            <input type="date" id="date_{{invoice.id}}" data-date-format="DD-MM-YYYY" name="date"
+                            <input type="date" id="date_{{ invoice.id }}" data-date-format="DD-MM-YYYY" name="date"
                                 required onchange="check_payment(event);" />
                             <!-- <input type="date" id="date_{{invoice.id}}" name="date" required onselect="dosomething('date_{{invoice.id}}')"/> -->
-                            <button type="button" id="btn_date_{{invoice.id}}" disabled
-                                onclick="complete_payment('{{invoice.id}}');" class="btn btn-primary btn-sm">
+                            <button type="button" id="btn_date_{{ invoice.id }}" disabled
+                                onclick="complete_payment('{{ invoice.id }}');" class="btn btn-primary btn-sm">
                                 <i class="fas fa-hand-holding-usd"></i>
                             </button>
                         </div>
@@ -103,15 +97,17 @@
                     <td align="right">
                         <div class="btn-group btn-group-justified" role="group">
                             <div class="btn-group" role="group">
-
-                                <button onclick="window.location.href = '/invoice/download/{{invoice.id}}';"
-                                    type="button" class="btn btn-primary btn-sm"><i class="fa fa-download"></i></button>
-
+                                <button onclick="window.location.href = '/invoice/download/{{
+											invoice.id
+										}}';" type="button" class="btn btn-primary btn-sm">
+                                    <i class="fa fa-download"></i>
+                                </button>
                             </div>
                             <div class="btn-group" role="group">
                                 <button type="button" class="button btn btn-warning btn-sm" data-toggle="modal"
-                                    style="margin-right:-25px;" data-target="#showdata_{{ invoice.id }}"><i
-                                        class="fas fa-edit"></i></button>
+                                    style="margin-right: -25px" data-target="#showdata_{{ invoice.id }}">
+                                    <i class="fas fa-edit"></i>
+                                </button>
                             </div>
                         </div>
                     </td>
@@ -132,7 +128,6 @@
                             </div>
                             <div class="modal-body">
                                 <form method="post" action="/invoice/edit" id="form_{{ invoice.id }}">
-
                                     <input type="hidden" name="id" value="{{ invoice.id }}" />
 
                                     <div class="form-group required">
@@ -142,107 +137,117 @@
                                     </div>
 
                                     <div class="form-group required">
-                                        <b><label class='control-label'>Personal / Bank Details:</label></b>
+                                        <b><label class="control-label">Personal / Bank Details:</label></b>
                                         <select id="personal_id" class="form-control" name="personal_id" required>
                                             <option selected value="{{ invoice.personal_id }}">
-                                                {{ invoice.personal.label }}</option>
+                                                {{ invoice.personal.label }}
+                                            </option>
                                             % for person in personas:
-                                            <option value={{person.id}}>{{person.label}}</option>
+                                            <option value="{{ person.id }}">
+                                                {{ person.label }}
+                                            </option>
                                             % end
                                         </select>
                                     </div>
 
                                     <div class="form-group required">
-                                        <b><label class='control-label'>Invoice Date:</label></b>
+                                        <b><label class="control-label">Invoice Date:</label></b>
                                         <input type="date" id="date" class="form-control" name="date" required
-                                            value="{{invoice.date}}">
+                                            value="{{ invoice.date }}" />
                                     </div>
 
                                     <div class="form-group required">
-                                        <b><label class='control-label'>Customer:</label></b>
+                                        <b><label class="control-label">Customer:</label></b>
                                         <select id="customer_id" class="form-control" name="customer_id" required>
                                             <option selected value="{{ invoice.customer_id }}">
-                                                {{ invoice.customer.name }}</option>
+                                                {{ invoice.customer.name }}
+                                            </option>
                                             % for customer in customers:
-                                            <option value={{customer.id}}>{{customer.name}}</option>
+                                            <option value="{{ customer.id }}">
+                                                {{ customer.name }}
+                                            </option>
                                             % end
                                         </select>
                                     </div>
 
                                     <div class="form-group required">
-                                        <b><label class='control-label'>Jobtype</label></b>
+                                        <b><label class="control-label">Jobtype</label></b>
                                         <select id="jobcode_id" class="form-control" name="jobcode_id" required>
                                             <option selected value="{{ invoice.jobcode_id }}">
-                                                {{ invoice.jobtype.name }}</option>
+                                                {{ invoice.jobtype.name }}
+                                            </option>
                                             % for jobtype in jobtypes:
-                                            <option value={{jobtype.id}}>{{jobtype.name}}</option>
+                                            <option value="{{ jobtype.id }}">
+                                                {{ jobtype.name }}
+                                            </option>
                                             % end
                                         </select>
                                     </div>
 
                                     <div class="form-group required">
-                                        <b><label class='control-label'>Agency:</label></b>
+                                        <b><label class="control-label">Agency:</label></b>
                                         <select id="agency_id" class="form-control" name="agency_id" required>
-                                            <option value=None>--</option>
+                                            <option value="None">--</option>
                                             % for agency in agencys:
-                                            <option value={{agency.id}}>{{agency.name}}</option>
+                                            <option value="{{ agency.id }}">
+                                                {{ agency.name }}
+                                            </option>
                                             % end
                                         </select>
                                     </div>
 
                                     <div class="form-group required">
-                                        <b><label class='control-label'>Mwst.:</label></b>
+                                        <b><label class="control-label">Mwst.:</label></b>
                                         <div class="input-group-prepend">
                                             <input type="number" id="mwst" class="form-control" name="mwst" min="0"
-                                                max="20" value="{{int(invoice.invoice_mwst)}}" required
-                                                value={{invoice.invoice_mwst}}>
+                                                max="20" value="{{ int(invoice.invoice_mwst) }}" required
+                                                value="{{ invoice.invoice_mwst }}" />
                                             <span class="input-group-text" id="basic-addon1">%</span>
                                         </div>
                                     </div>
 
-                                    <div class="form-group required invoice" id="otherFieldGroupDiv" name=Test123>
-                                        <br>
+                                    <div class="form-group required invoice" id="otherFieldGroupDiv" name="Test123">
+                                        <br />
                                         <h5>Invoice Details:</h5>
-                                        <br>
-                                        <div id="itemlist2" class="itemlist">
+                                        <br />
+                                        <div id="itemlist2" class="itemlist2">
                                             % for item in invoice.items:
 
-                                            <input type="hidden" name="item_id" value="{{item.id}}" />
+                                            <input type="hidden" name="item_id" value="{{ item.id }}" />
 
                                             <div class="row">
                                                 <div class="col-6">
-                                                    <b><label class='control-label'>Item Count:</label></b>
+                                                    <b><label class="control-label">Item Count:</label></b>
                                                     <input type="number" class="form-control w-100" name="count" min="1"
-                                                        required value="{{item.count}}">
+                                                        required value="{{ item.count }}" />
                                                 </div>
                                                 <div class="col-6">
-                                                    <b><label class='control-label'>Cost:</label></b>
+                                                    <b><label class="control-label">Cost:</label></b>
                                                     <div class="input-group-prepend">
                                                         <input type="number" class="form-control w-100" name="cost"
-                                                            required value="{{item.cost}}">
+                                                            required value="{{ item.cost }}" />
                                                         <span class="input-group-text" id="basic-addon1">€</span>
                                                     </div>
                                                 </div>
 
                                                 <div class="col-12">
-                                                    <b><label class='control-label'>Description:</label></b>
+                                                    <b><label class="control-label">Description:</label></b>
                                                     <textarea class="form-control w-100" name="description" rows=" 3"
-                                                        required>{{item.description}}</textarea>
+                                                        required>{{ item.description }}</textarea>
                                                 </div>
                                             </div>
-                                            <br>
+                                            <br />
+
                                             %end
+
                                         </div>
                                         <div id="moreitemlist" class="moreitemlist"></div>
                                     </div>
-
 
                                     <!-- <div id="newRow">
                                         <button id="additem" type="button" class="btn btn-info">Additional Item</button>
                                         <button id="removeitem" type="button" class="btn btn-danger">Remove</button>
                                     </div><br> -->
-
-
 
                                     <div class="modal-footer">
                                         <input type="submit" class="btn btn-primary" value="Save Changes" />
@@ -256,44 +261,48 @@
                     </div>
                 </div>
 
-
                 <!-- The Modal -->
-                <div class="modal fade bd-example-modal-xl" id="showInvoice_{{invoice.invoice_id}}">
+                <div class="modal fade bd-example-modal-xl" id="showInvoice_{{ invoice.invoice_id }}">
                     <div class="modal-dialog modal-xl">
                         <div class="modal-content">
-
                             <!-- Modal Header -->
                             <div class="modal-header">
-                                <h4 class="modal-title">Invoice Details for: {{invoice.invoice_id}} </h4>
-                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                                <h4 class="modal-title">
+                                    Invoice Details for: {{ invoice.invoice_id }}
+                                </h4>
+                                <button type="button" class="close" data-dismiss="modal">
+                                    &times;
+                                </button>
                             </div>
 
                             <!-- Modal body -->
                             <div class="modal-body">
-                                <iframe src='/invoice/display/{{invoice.id}}' width="100%" height="1000" frameborder="0"
-                                    style="border:0" allowfullscreen></iframe>
+                                <!-- <iframe src='/invoice/display/{{invoice.id}}' width="100%" height="1000" frameborder="0"
+                                    style="border:0" allowfullscreen></iframe> -->
+                                <embed src="/invoice/display/{{ invoice.id }}" width="100%" height="1000" />
                             </div>
 
                             <!-- Modal footer -->
                             <div class="modal-footer">
-                                <button onclick="window.location.href = '/invoice/download/{{invoice.id}}';"
-                                    type="button" class="btn btn-primary"><i class="fa fa-download"></i>
-                                    DOWNLAOD</button>
-                                <button type="button" class="btn btn-danger" data-dismiss="modal">Close</button>
-
+                                <button onclick="window.location.href = '/invoice/download/{{
+											invoice.id
+										}}';" type="button" class="btn btn-primary">
+                                    <i class="fa fa-download"></i> DOWNLAOD
+                                </button>
+                                <button type="button" class="btn btn-danger" data-dismiss="modal">
+                                    Close
+                                </button>
                             </div>
-
                         </div>
                     </div>
                 </div>
-
-
 
                 % end
             </table>
         </div>
     </div>
 
+    %if invoices:
     <!-- Add a new Invoice -->
     <div class="modal fade" id="create" tabindex="0" role="dialog" aria-labelledby="exampleModalCenterTitle"
         aria-hidden="true">
@@ -309,105 +318,129 @@
                 </div>
                 <div class="modal-body">
                     <form method="post" action="/invoice/edit" id="myForm">
-
                         <input type="hidden" name="id" value="" />
 
-                        <div class="form-group ">
+                        <div class="form-group">
                             <b><label class="control-label">Invoice ID:</label></b>
                             <input disabled type="text" class="form-control" name="invoice_id" readonly="readonly"
-                                value={{invoice.generate_id()}} />
+                                value="{{ invoice.generate_id() }}" />
                         </div>
 
                         <div class="form-group required">
-                            <b><label class='control-label'>Personal / Bank Details:</label></b>
+                            <b><label class="control-label">Personal / Bank Details:</label></b>
                             <select id="personal_id" class="form-control" name="personal_id" required>
                                 % for person in personas:
-                                <option value={{person.id}}>{{person.label.upper()}}</option>
+                                <option value="{{ person.id }}">
+                                    {{ person.label.upper() }}
+                                </option>
                                 % end
                             </select>
                         </div>
 
                         <div class="form-group required">
-                            <b><label class='control-label'>Invoice Date:</label></b>
-                            <input type="date" id="date" class="form-control" name="date" required>
+                            <b><label class="control-label">Invoice Date:</label></b>
+                            <input type="date" id="date" class="form-control" name="date" required />
                         </div>
 
                         <div class="form-group required">
-                            <b><label class='control-label'>Customer:</label></b>
+                            <b><label class="control-label">Customer:</label></b>
                             <select id="customer_id" class="form-control" name="customer_id" required>
                                 % for customer in customers:
-                                <option value={{customer.id}}>{{customer.name}}</option>
+                                <option value="{{ customer.id }}">{{ customer.name }}</option>
                                 % end
                             </select>
                         </div>
 
                         <div class="form-group required">
-                            <b><label class='control-label'>Jobtype</label></b>
+                            <b><label class="control-label">Jobtype</label></b>
                             <select id="jobcode_id" class="form-control" name="jobcode_id" required>
                                 % for jobtype in jobtypes:
-                                <option value={{jobtype.id}}>{{jobtype.name}}</option>
+                                <option value="{{ jobtype.id }}">{{ jobtype.name }}</option>
                                 % end
                             </select>
                         </div>
 
                         <div class="form-group required">
-                            <b><label class='control-label'>Agency:</label></b>
+                            <b><label class="control-label">Agency:</label></b>
                             <select id="agency_id" class="form-control" name="agency_id" required>
-                                <option value=None>--</option>
+                                <option value="None">--</option>
                                 % for agency in agencys:
-                                <option value={{jobtype.id}}>{{agency.name}}</option>
+                                <option value="{{ jobtype.id }}">{{ agency.name }}</option>
                                 % end
                             </select>
                         </div>
 
                         <div class="form-group required">
-                            <b><label class='control-label'>Mwst.:</label></b>
+                            <b><label class="control-label">Mwst.:</label></b>
                             <div class="input-group-prepend">
                                 <input type="number" id="mwst" class="form-control" name="mwst" min="0" max="20"
-                                    value="19" required>
+                                    value="19" required />
                                 <span class="input-group-text" id="basic-addon1">%</span>
                             </div>
                         </div>
 
-                        <div class="form-group required invoice" id="otherFieldGroupDiv" name=Test123>
-                            <br>
+                        <div class="form-group required invoice" id="otherFieldGroupDiv" name="Test123">
+                            <br />
                             <h5>Invoice Details:</h5>
-                            <br>
-                            <div id="itemlist1" class="itemlist">
-
+                            <br />
+                            <div id="itemlist" class="itemlist">
                                 <input type="hidden" name="item_id" value="" />
 
                                 <div class="row">
                                     <div class="col-6">
-                                        <b><label class='control-label'>Item Count:</label></b>
+                                        <b><label class="control-label">Item Count:</label></b>
                                         <input type="number" class="form-control w-100" name="count"
-                                            onkeypress="return event.charCode >= 48" min="1" required>
+                                            onkeypress="return event.charCode >= 48" min="1" required />
                                     </div>
                                     <div class="col-6">
-                                        <b><label class='control-label'>cost:</label></b>
+                                        <b><label class="control-label">cost:</label></b>
                                         <div class="input-group-prepend">
-                                            <input type="number" class="form-control w-100" name="cost" required>
+                                            <input type="number" class="form-control w-100" name="cost" required />
                                             <span class="input-group-text" id="basic-addon1">€</span>
                                         </div>
                                     </div>
 
                                     <div class="col-12">
-                                        <b><label class='control-label'>Description:</label></b>
+                                        <b><label class="control-label">Description:</label></b>
                                         <textarea class="form-control w-100" name="description" rows=" 3"
                                             required></textarea>
                                     </div>
                                 </div>
-                                <br>
+                                <br />
+
+                                <div id="newItem" class="row" hidden>
+                                    <div class="col-6">
+                                        <b><label class="control-label">Item Count:</label></b>
+                                        <input type="number" class="form-control w-100" name="count"
+                                            onkeypress="return event.charCode >= 48" min="1" required />
+                                    </div>
+                                    <div class="col-6">
+                                        <b><label class="control-label">cost:</label></b>
+                                        <div class="input-group-prepend">
+                                            <input type="number" class="form-control w-100" name="cost" required />
+                                            <span class="input-group-text" id="basic-addon1">€</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <b><label class="control-label">Description:</label></b>
+                                        <textarea class="form-control w-100" name="description" rows=" 3"
+                                            required></textarea>
+                                    </div>
+                                </div>
                             </div>
                             <div id="moreitemlist" class="moreitemlist"></div>
                         </div>
 
                         <div id="newRow">
-                            <button id="additem" type="button" class="btn btn-info">Additional Item</button>
-                            <button id="removeitem" type="button" class="btn btn-danger">Remove</button>
-                        </div><br>
-
-
+                            <button id="additem" type="button" class="btn btn-info">
+                                Additional Item
+                            </button>
+                            <button disabled id="removeitem" type="button" class="btn btn-danger">
+                                Remove
+                            </button>
+                        </div>
+                        <br />
 
                         <div class="modal-footer">
                             <input type="submit" class="btn btn-primary" value="Save Changes" />
@@ -420,14 +453,10 @@
             </div>
         </div>
     </div>
-
-
+    %end
 </body>
 
-
 <script type="text/javascript">
-
-
     $("#tableedit").Tabledit({
         url: "/invoice/edit",
         restoreButton: true,
@@ -473,54 +502,53 @@
         window.location.reload();
     });
 
-
     $(document).ready(function () {
-        $('#additem').click(function () {
-            var num = $('.itemlist').length;
+        $("#additem").click(function () {
+            var num = $(".itemlist").length;
             var newNum = new Number(num + 1);
 
-            var newSection = $('#itemlist' + num).clone().attr('id', 'itemlist' + newNum);
+            var newSection = $("#itemlist" + num)
+                .clone()
+                .attr("id", "itemlist" + newNum);
 
-            // Add the clone to the section
-            $('.itemlist').last().append(newSection)
-            // Enable the Disable button
-            $('#removeitem').prop('disabled', false);
+            // // Add the clone to the section
+            $(".itemlist").last().append(newSection);
+            // // Enable the Disable button
+            $("#removeitem").prop("disabled", false);
 
-            // If there are more then X items, do not allow the creation of more
-            if (newNum == 5)
-                $('#additem').attr('disabled', 'disabled');
+            // // If there are more then X items, do not allow the creation of more
+            if (newNum == 5) $("#additem").attr("disabled", "disabled");
         });
 
-        $('#removeitem').click(function () {
-            var num = $('.itemlist').length; // how many "duplicatable" input fields we currently have
-            $('#itemlist' + num).remove(); // remove the last element
+        $("#removeitem").click(function () {
+            var num = $(".itemlist").length; // how many "duplicatable" input fields we currently have
+            $("#itemlist" + num).remove(); // remove the last element
 
             // enable the "add" button
-            $('#additem').prop('disabled', false);
+            $("#additem").prop("disabled", false);
 
             // if only one element remains, disable the "remove" button
-            if (num - 1 == 1)
-                $('#removeitem').prop('disabled', true);
+            if (num - 1 == 1) $("#removeitem").prop("disabled", true);
         });
-
-
     });
 
     function check_payment(event) {
         var value = event.target.value;
-        var id = event.target.id
+        var id = event.target.id;
 
         var btn = $("#btn_" + id);
-        btn.prop('disabled', false);
-    };
+        btn.prop("disabled", false);
+    }
 
     function complete_payment(id) {
         var date = $("#date_" + id).val();
         if (!date) {
-            $("#warning").fadeTo(3000, 800).slideUp(800, function () {
-                $("#warning").slideUp(800);
-            });
-        };
+            $("#warning")
+                .fadeTo(3000, 800)
+                .slideUp(800, function () {
+                    $("#warning").slideUp(800);
+                });
+        }
         // submit the change
         $.ajax({
             url: "/invoice/edit",
@@ -530,8 +558,7 @@
                 window.location.reload();
             },
         });
-
-    };
+    }
 
     function download(id) {
         // submit the change
@@ -543,7 +570,7 @@
                 window.location.reload();
             },
         });
-    };
-
-
+    }
 </script>
+
+</html>

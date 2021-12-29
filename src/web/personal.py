@@ -4,7 +4,7 @@ import logging
 from bottle import get, post, request, response, template, put, redirect
 from database import DbConnection, PaymentDetails, PersonalDetails
 
-from .helper import Container
+from .authentification import Container
 
 log = logging.getLogger(__name__)
 
@@ -16,9 +16,11 @@ log = logging.getLogger(__name__)
 
 @get("/personal")
 def personal():
+    container = Container()
     with DbConnection() as db:
-        container = Container()
-        container.personaldetails = db.query("personaldetails")
+        container.personaldetails = db.query(
+            "personaldetails", filters={"user_id": container.current_user.id}
+        )
         container.payment_data = db.query("paymentdetails")
 
         payment_options = {0: "-"}
@@ -76,8 +78,13 @@ def personal_edit():
 
 @get("/payment")
 def payment():
+    container = Container()
     with DbConnection() as db:
-        data = db.query("paymentdetails", order_by="label")
+        data = db.query(
+            "paymentdetails",
+            filters={"user_id": container.current_user.id},
+            order_by="label",
+        )
     return template("payment.tpl", input=data)
 
 

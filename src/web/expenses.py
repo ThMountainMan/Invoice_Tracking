@@ -3,7 +3,7 @@ import logging
 from bottle import get, post, request, response, template
 from database import DbConnection, Expenses
 from dateutil import parser
-from .helper import Container
+from .authentification import Container
 
 log = logging.getLogger(__name__)
 
@@ -15,9 +15,14 @@ log = logging.getLogger(__name__)
 
 @get("/expenses")
 def expenses():
+    container = Container()
     with DbConnection() as db:
-        container = Container()
-        container.expenses = db.query("expenses", order_by="expense_id", reverse=True)
+        container.expenses = db.query(
+            "expenses",
+            filters={"user_id": container.current_user.id},
+            order_by="expense_id",
+            reverse=True,
+        )
     return template("expenses.tpl", **container)
 
 

@@ -5,7 +5,7 @@ from bottle import get, redirect, request, route, static_file, template, respons
 from database import DbConnection, Invoices, Invoices_Item
 from dateutil import parser
 
-from .helper import Container
+from .authentification import Container
 
 log = logging.getLogger(__name__)
 
@@ -19,10 +19,15 @@ log = logging.getLogger(__name__)
 @get("/invoices")
 @get("/invoices/<year>")
 def invoices(year=None):
+    container = Container()
     with DbConnection() as db:
-        container = Container()
-        invoices = db.query("invoices", reverse=True, order_by="invoice_id")
-        expenses = db.query("expenses")
+        invoices = db.query(
+            "invoices",
+            filters={"user_id": container.current_user.id},
+            reverse=True,
+            order_by="invoice_id",
+        )
+        expenses = db.query("expenses", filters={"user_id": container.current_user.id})
 
         if year:
             invoices = [res for res in invoices if res.date.year == int(year)]
@@ -30,10 +35,20 @@ def invoices(year=None):
 
         container.invoices = invoices
         container.expenses = expenses
-        container.jobtypes = db.query("jobtypes")
-        container.customers = db.query("customers", order_by="name")
-        container.personas = db.query("personaldetails", order_by="label")
-        container.agencys = db.query("agencys", order_by="name")
+        container.jobtypes = db.query(
+            "jobtypes", filters={"user_id": container.current_user.id}
+        )
+        container.customers = db.query(
+            "customers", filters={"user_id": container.current_user.id}, order_by="name"
+        )
+        container.personas = db.query(
+            "personaldetails",
+            filters={"user_id": container.current_user.id},
+            order_by="label",
+        )
+        container.agencys = db.query(
+            "agencys", filters={"user_id": container.current_user.id}, order_by="name"
+        )
 
         # Calculations for the income overview
         # calculate the current income
