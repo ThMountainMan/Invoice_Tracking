@@ -1,9 +1,13 @@
 import logging
 
 import export
-from bottle import get, redirect, request, route, static_file, template, response, post
+
+from flask import redirect, request, render_template, send_file
 from database import DbConnection, Invoices, Invoices_Item
 from dateutil import parser
+import os
+
+from server import app
 
 from .authentification import Container
 
@@ -15,9 +19,10 @@ log = logging.getLogger(__name__)
 # =========================================
 
 
-@get("/")
-@get("/invoices")
-@get("/invoices/<year>")
+# @get("/")
+# @get("/invoices")
+# @get("/invoices/<year>")
+@app.route("/")
 def invoices(year=None):
     container = Container()
     with DbConnection() as db:
@@ -64,35 +69,35 @@ def invoices(year=None):
         container.expenses = round(sum_expenses, 2)
         container.profit = round(income - sum_expenses, 2)
 
-    return template("invoices.tpl", **container)
+    return render_template("invoices.html", **container)
 
 
-@post("/invoice/edit")
+@app.route("/invoice/edit")
 def invoice_edit():
     try:
+        container = Container()
         with DbConnection() as db:
-            container = Container()
-            id = request.POST.get("id")
+            id = request.form.get("id")
             # Get the expense we want to edit
-            if request.POST["action"] == "edit":
+            if request.form["action"] == "edit":
                 invoice = db.get("invoices", id) if id else Invoices()
             # delete the selected expense
-            elif request.POST["action"] == "delete":
+            elif request.form["action"] == "delete":
                 db.delete("invoices", id)
                 return {"success": True}
 
-            elif request.POST["action"] == "pay":
+            elif request.form["action"] == "pay":
                 invoice = db.get("invoices", id)
-                invoice.paydate = parser.parse(request.POST.get("paydate"))
+                invoice.paydate = parser.parse(request.form.get("paydate"))
                 db.merge(invoice)
                 return {"success": True}
 
             # TODO: How doe we rollback properly ?
-            elif request.POST["action"] == "restore":
+            elif request.form["action"] == "restore":
                 db.rollback()
                 return {"success": True}
             # Collect the Form Data
-            form_data = request.forms
+            form_data = request.form
             # Create or Update the Jobtypes
             invoice.invoice_id = (
                 invoice.generate_id() if not id else form_data.get("invoice_id")
@@ -106,10 +111,10 @@ def invoice_edit():
             invoice.personal_id = form_data.get("personal_id")
 
             # Creat a joint list of the invoice items
-            _itemID = request.POST.getall("item_id")
-            _count = request.POST.getall("count")
-            _cost = request.POST.getall("cost")
-            _description = request.POST.getall("description")
+            _itemID = request.form.getall("item_id")
+            _count = request.form.getall("count")
+            _cost = request.form.getall("cost")
+            _description = request.form.getall("description")
             _items = map(list, zip(_itemID, _count, _cost, _description))
 
             invoice_items = []
@@ -138,11 +143,11 @@ def invoice_edit():
 
             return {"success": True}
     except Exception as e:
-        response.status = 400
+        # response.status = 400
         return str(e)
 
 
-@get("/invoice/display/<id>")
+@app.route("/invoice/display/<id>")
 def invoice_display(id=None):
     try:
         with DbConnection() as db:
@@ -154,7 +159,7 @@ def invoice_display(id=None):
             container.mwst = container.invoice.get_mwst()
 
             container.sum_mwst = container.invoice.get_sum_mwst()
-            html_data = template("Invoice/Invoice_V1.tpl", **container)
+            html_data = render_template("Invoice/Invoice_V1.html", **container)
 
             log.info(
                 f"Show invoice -{container.invoice.invoice_id}- with id : {id} ..."
@@ -162,11 +167,11 @@ def invoice_display(id=None):
             return html_data
 
     except Exception as e:
-        response.status = 400
+        # response.status = 400
         return str(e)
 
 
-@get("/invoice/download/<id>")
+@app.route("/invoice/download/<id>")
 def invoice_download(id=None):
     try:
         with DbConnection() as db:
@@ -178,10 +183,11 @@ def invoice_download(id=None):
             container.mwst = container.invoice.get_mwst()
 
             container.sum_mwst = container.invoice.get_sum_mwst()
-            html_data = template("Invoice/Invoice_V1.tpl", **container)
+            html_data = render_template("Invoice/Invoice_V1.html", **container)
             File, Path = export.export_to_pdf(html_data, container.invoice)
-            return static_file(File, root=Path, download=File)
+            # return send_file(File, root=Path, download=File)
+            return send_file(os.path.join(Path, File), as_attachment=True)
 
     except Exception as e:
-        response.status = 400
+        # response.status = 400
         return str(e)

@@ -4,9 +4,10 @@
 import logging
 import os
 
-import bottle
-from config import appconfig as AppConfig
-from bottle import route, static_file
+import flask
+from bottle import static_file
+from config import appconfig
+from server import app
 
 log = logging.getLogger(__name__)
 
@@ -16,7 +17,7 @@ log = logging.getLogger(__name__)
 # =========================================
 
 
-@route("/export/<year:int>")
+@app.route("/export/<year>")
 def export_csv(year=None):
     """[summary]
 
@@ -32,11 +33,6 @@ def export_csv(year=None):
     pass
 
 
-@route("/static/<filepath:path>")
+@app.route("/static/<filepath>")
 def server_static(filepath):
     return static_file(filepath, root=os.path.join(os.path.dirname(__file__), "static"))
-
-
-if __name__ == "__main__":
-    bottle.debug(False)
-    bottle.run(host=AppConfig.web_host, port=AppConfig.web_port)

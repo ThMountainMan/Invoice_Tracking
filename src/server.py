@@ -6,14 +6,27 @@ a threaded (non blocking) execution
 import logging
 import threading
 
-import bottle
+from os.path import abspath, dirname
+import os
+
+import flask
+from flask import Flask
 from gevent import monkey
+from gevent.pywsgi import WSGIServer
 
 from config import appconfig as AppConfig
 
 # Apply GEVENT patches to bottle server to enable asynchronous functionality
 monkey.patch_all()
 
+TEMPLATE_FOLDER = os.path.join(dirname(dirname(abspath(__file__))), "src", "views")
+STATIC_FOLDER = os.path.join(
+    dirname(dirname(abspath(__file__))), "src", "web", "static"
+)
+
+app = Flask(__name__, template_folder=TEMPLATE_FOLDER, static_folder=STATIC_FOLDER)
+app.jinja_env.auto_reload = True
+app.config["TEMPLATES_AUTO_RELOAD"] = True
 
 log = logging.getLogger(__name__)
 
@@ -35,15 +48,16 @@ class ServerThread(threading.Thread):
 def _error_handler_500(error):
     """Log internal errors and call the default handler."""
     log.error("http error 500:\n%s\n%s", error.exception, error.traceback)
-    return bottle.app.default.default_error_handler(error)
+    return flask.app.default.default_error_handler(error)
 
 
 def _run(**kwargs):
-    bottle.run(**kwargs)
+    # bottle.run(**kwargs)
+    kwargs["server"].serve_forever()
 
 
 def run(blocking=True):
-    server = bottle.GeventServer(host=AppConfig.web_host, port=AppConfig.web_port)
+    server = WSGIServer((AppConfig.web_host, AppConfig.web_port), app)
     kwargs = {
         "server": server,
         "quiet": AppConfig.debug,
