@@ -45,7 +45,7 @@ def init(config=appconfig, create=False):
 
     if appconfig.debug:
         log.info("enable sql echo logging (debug)")
-    url = f"sqlite:///{config.db_path}\\{config.db_name}.db"
+    url = f"sqlite:///{config.db_path}/{config.db_name}.db"
 
     # Run the DB Migration if needed
     migration.run_migrations(script_location=appconfig.db_migration, dsn=url)

@@ -1,0 +1,8 @@
+flask
+gunicorn
+SQLAlchemy
+alembic
+gevent
+pdfkit
+PyYAML
+python-dateutil

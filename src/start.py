@@ -7,19 +7,14 @@ Startup script for the Invoice Tracker Webservice
 
 import logging
 import os
-
-# import site
 import sys
 
-from config import read_config, write_config, appconfig
-
-FORMAT = "[%(levelname)-5s] %(name)-20s %(message)s"
+from config import read_config, write_config
 
 THISDIR = os.path.dirname(__file__)
-SVC_NAME = "Invoice_Tracker"
-SVC_DISPLAY_NAME = f"_{SVC_NAME}"
-DEFAULT_CFG = os.path.abspath(os.path.join(THISDIR, "config.yaml"))
+DEFAULT_CFG = os.path.relpath("config.yaml")
 
+FORMAT = "[%(levelname)-5s] %(name)-20s %(message)s"
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format=FORMAT)
 
 log = logging.getLogger()
@@ -28,27 +23,28 @@ log = logging.getLogger()
 # site.addsitedir(os.path.abspath(os.path.join(THISDIR, "..", ".debug")))
 
 
-def main(config_file=DEFAULT_CFG, blocking=True, argv=None):
-    if os.path.exists(config_file):
-        log.info("Read config file: %s", config_file)
-        read_config(config_file)
+def main(config_file=DEFAULT_CFG):
 
-        import database
-        import server
-        import web
-
-        database.init()
-    else:
-        log.info("Create default config file: %s", config_file)
+    if not os.path.exists(config_file):
+        log.warning("Create default config file: %s", config_file)
         write_config(config_file)
-        sys.exit(f"Config file {config_file} created!")
+        # sys.exit(f"Config file {config_file} created!")
+
+    log.info("Read config file: %s", config_file)
+    read_config(config_file)
+
+    import api
+    import database
+    import server
+
+    database.init()
 
     # Init the Logger Functionality
     init_logger()
 
     log.info("starting server...")
 
-    return server.run(blocking=blocking)
+    return server.run()
 
 
 def init_logger():
@@ -74,5 +70,4 @@ if __name__ == "__main__":
     # Validate the DB connection
     # TODO: Do we need to validate the DB connection ?
     # Start the Server
-    if True:
-        main(blocking=True)
+    main()

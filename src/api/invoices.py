@@ -1,12 +1,11 @@
 import logging
 import os
 
-from flask.wrappers import Response
-
 import export
 from database import DbConnection, Invoices, Invoices_Item
 from dateutil import parser
-from flask import redirect, render_template, request, send_file, abort
+from flask import abort, redirect, render_template, request, send_file
+from flask.wrappers import Response
 from server import app
 
 from .authentification import Container
@@ -19,9 +18,6 @@ log = logging.getLogger(__name__)
 # =========================================
 
 
-# @get("/")
-# @get("/invoices")
-# @get("/invoices/<year>")
 @app.route("/")
 def invoices(year=None):
     container = Container()
@@ -159,7 +155,7 @@ def invoice_display(id=None):
             container.mwst = container.invoice.get_mwst()
 
             container.sum_mwst = container.invoice.get_sum_mwst()
-            html_data = render_template("Invoice/Invoice_V1.html", **container)
+            html_data = render_template("templates/Invoice_V1.html", **container)
 
             log.info(
                 f"Show invoice -{container.invoice.invoice_id}- with id : {id} ..."
@@ -183,7 +179,7 @@ def invoice_download(id=None):
             container.mwst = container.invoice.get_mwst()
 
             container.sum_mwst = container.invoice.get_sum_mwst()
-            html_data = render_template("Invoice/Invoice_V1.html", **container)
+            html_data = render_template("templates/Invoice_V1.html", **container)
             File, Path = export.export_to_pdf(html_data, container.invoice)
             # return send_file(File, root=Path, download=File)
             return send_file(os.path.join(Path, File), as_attachment=True)
