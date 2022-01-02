@@ -1,19 +1,21 @@
 import logging
 
 from database import DbConnection, User
-from flask import render_template, request
-from server import app
+from flask import Blueprint, render_template, request
+from flask_login import current_user, login_required
 
-from .authentification import Container
+from .helper import Container
 
 log = logging.getLogger(__name__)
 
+setup_users = Blueprint("user", __name__)
 # =========================================
 # User Related Functions
 # =========================================
 
 
-@app.route("/users")
+@setup_users.route("/users")
+@login_required
 def users():
     container = Container()
     with DbConnection() as db:
@@ -21,7 +23,8 @@ def users():
     return render_template("users.html", **container)
 
 
-@app.route("/users/edit", methods=["POST"])
+@setup_users.route("/users/edit", methods=["POST"])
+@login_required
 def user_edit():
     try:
         with DbConnection() as db:

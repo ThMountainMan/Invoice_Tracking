@@ -33,7 +33,6 @@ def main(config_file=DEFAULT_CFG):
     log.info("Read config file: %s", config_file)
     read_config(config_file)
 
-    import api
     import database
     import server
 

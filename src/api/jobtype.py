@@ -1,29 +1,33 @@
 import logging
 
 from database import DbConnection, Jobtypes
-from flask import render_template, request
-from server import app
+from flask import Blueprint, render_template, request
+from flask_login import current_user, login_required
 
-from .authentification import Container
+
+from .helper import Container
 
 log = logging.getLogger(__name__)
 
+setup_jobtypes = Blueprint("jobtypes", __name__)
 # =========================================
 # Jobtype Related Functions
 # =========================================
 
 
-@app.route("/jobtypes")
+@setup_jobtypes.route("/jobtypes")
+@login_required
 def jobtypes():
     container = Container()
     with DbConnection() as db:
         container.jobtypes = db.query(
-            "jobtypes", filters={"user_id": container.current_user.id}, order_by="name"
+            "jobtypes", filters={"user_id": current_user.id}, order_by="name"
         )
     return render_template("jobtypes.html", **container)
 
 
-@app.route("/jobtypes/edit", methods=["POST"])
+@setup_jobtypes.route("/jobtypes/edit", methods=["POST"])
+@login_required
 def jobtype_edit():
     try:
         with DbConnection() as db:
@@ -44,6 +48,7 @@ def jobtype_edit():
             form_data = request.form
             # Create or Update the Jobtypes
             jobtype.name = form_data.get("name")
+            jobtype.user_id = current_user.id
 
             if jobtype.id:
                 db.merge(jobtype)

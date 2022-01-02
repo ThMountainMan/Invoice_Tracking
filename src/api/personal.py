@@ -2,25 +2,26 @@ import json
 import logging
 
 from database import DbConnection, PaymentDetails, PersonalDetails
-from flask import render_template, request
-from server import app
+from flask import Blueprint, render_template, request
+from flask_login import current_user, login_required
 
-from .authentification import Container
+from .helper import Container
 
 log = logging.getLogger(__name__)
 
-
+setup_personal = Blueprint("personal", __name__)
 # =========================================
 # PERSONAL FUNCTIONS
 # =========================================
 
 
-@app.route("/personal")
+@setup_personal.route("/personal")
+@login_required
 def personal():
     container = Container()
     with DbConnection() as db:
         container.personaldetails = db.query(
-            "personaldetails", filters={"user_id": container.current_user.id}
+            "personaldetails", filters={"user_id": current_user.id}
         )
         container.payment_data = db.query("paymentdetails")
 
@@ -33,7 +34,8 @@ def personal():
     return render_template("personal.html", **container)
 
 
-@app.route("/personal/edit", methods=["POST"])
+@setup_personal.route("/personal/edit", methods=["POST"])
+@login_required
 def personal_edit():
     try:
         with DbConnection() as db:
@@ -61,6 +63,7 @@ def personal_edit():
             personal.phone = form_data.get("phone")
             personal.payment_id = int(form_data.get("payment_id"))
             personal.taxnumber = form_data.get("taxnumber")
+            personal.user_id = current_user.id
 
             if personal.id:
                 db.merge(personal)
@@ -77,20 +80,20 @@ def personal_edit():
 # =========================================
 
 
-@app.route("/payment")
+@setup_personal.route("/payment")
 def payment():
     container = Container()
     with DbConnection() as db:
         container.paymentdetails = db.query(
             "paymentdetails",
-            filters={"user_id": container.current_user.id},
+            filters={"user_id": current_user.id},
             order_by="label",
         )
     return render_template("payment.html", **container)
 
 
-@app.route("/payment_edit/<id>", methods=["POST"])
-@app.route("/payment_edit", methods=["POST"])
+@setup_personal.route("/payment_edit/<id>", methods=["POST"])
+@setup_personal.route("/payment_edit", methods=["POST"])
 def payment_edit(id=None):
     try:
         with DbConnection() as db:
@@ -114,6 +117,8 @@ def payment_edit(id=None):
             paymentdetails.bank = form_data.get("bank")
             paymentdetails.IBAN = form_data.get("IBAN")
             paymentdetails.BIC = form_data.get("BIC")
+            paymentdetails.user_id = current_user.id
+
             if paymentdetails.id:
                 db.merge(paymentdetails)
             else:

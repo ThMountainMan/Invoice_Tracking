@@ -1,6 +1,6 @@
 import logging
 import os
-
+import secrets
 import globconf
 
 log = logging.getLogger(__name__)
@@ -35,6 +35,8 @@ class AppConfig(globconf.Config):
     db_name = "invoice_database"
     db_user = "invoice_tool"
     db_pwd = ""
+
+    secret_key = secrets.token_hex(16)
 
     # webserver
     # Settings related to the webserver

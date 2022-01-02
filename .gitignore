@@ -10,7 +10,7 @@ __pycache__/
 
 *wkhtmltopdf/
 *Temp/
-
+.vscode/
 
 # C extensions
 *.so

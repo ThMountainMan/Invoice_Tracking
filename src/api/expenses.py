@@ -2,33 +2,36 @@ import logging
 
 from database import DbConnection, Expenses
 from dateutil import parser
-from flask import Response, render_template, request
-from server import app
+from flask import Blueprint, Response, render_template, request
+from flask_login import current_user, login_required
 
-from .authentification import Container
+from .helper import Container
 
 log = logging.getLogger(__name__)
 
+app_expenses = Blueprint("expenses", __name__)
 
 # =========================================
 # EXPENSES FUNCTIONS
 # =========================================
 
 
-@app.route("/expenses")
+@app_expenses.route("/expenses")
+@login_required
 def expenses():
     container = Container()
     with DbConnection() as db:
         container.expenses = db.query(
             "expenses",
-            filters={"user_id": container.current_user.id},
+            filters={"user_id": current_user.id},
             order_by="expense_id",
             reverse=True,
         )
     return render_template("expenses.html", **container)
 
 
-@app.route("/expenses/edit", methods=["POST"])
+@app_expenses.route("/expenses/edit", methods=["POST"])
+@login_required
 def expense_edit():
     try:
         with DbConnection() as db:
@@ -54,6 +57,7 @@ def expense_edit():
             expenses.date = parser.parse(form_data.get("date"))
             expenses.cost = form_data.get("cost").replace(",", ".").replace("€", "")
             expenses.comment = form_data.get("comment")
+            expenses.user_id = current_user.id
 
             if expenses.id:
                 db.merge(expenses)

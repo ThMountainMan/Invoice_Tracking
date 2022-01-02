@@ -4,31 +4,34 @@ import os
 import export
 from database import DbConnection, Invoices, Invoices_Item
 from dateutil import parser
-from flask import abort, redirect, render_template, request, send_file
+from flask import Blueprint, abort, redirect, render_template, request, send_file
 from flask.wrappers import Response
-from server import app
+from flask_login import current_user, login_required
 
-from .authentification import Container
+
+from .helper import Container
 
 log = logging.getLogger(__name__)
 
+app_invoices = Blueprint("invoices", __name__)
 
 # =========================================
 # Invoice Related Functions
 # =========================================
 
 
-@app.route("/")
+@app_invoices.route("/")
+@login_required
 def invoices(year=None):
     container = Container()
     with DbConnection() as db:
         invoices = db.query(
             "invoices",
-            filters={"user_id": container.current_user.id},
+            filters={"user_id": current_user.id},
             reverse=True,
             order_by="invoice_id",
         )
-        expenses = db.query("expenses", filters={"user_id": container.current_user.id})
+        expenses = db.query("expenses", filters={"user_id": current_user.id})
 
         if year:
             invoices = [res for res in invoices if res.date.year == int(year)]
@@ -36,19 +39,17 @@ def invoices(year=None):
 
         container.invoices = invoices
         container.expenses = expenses
-        container.jobtypes = db.query(
-            "jobtypes", filters={"user_id": container.current_user.id}
-        )
+        container.jobtypes = db.query("jobtypes", filters={"user_id": current_user.id})
         container.customers = db.query(
-            "customers", filters={"user_id": container.current_user.id}, order_by="name"
+            "customers", filters={"user_id": current_user.id}, order_by="name"
         )
         container.personas = db.query(
             "personaldetails",
-            filters={"user_id": container.current_user.id},
+            filters={"user_id": current_user.id},
             order_by="label",
         )
         container.agencys = db.query(
-            "agencys", filters={"user_id": container.current_user.id}, order_by="name"
+            "agencys", filters={"user_id": current_user.id}, order_by="name"
         )
 
         # Calculations for the income overview
@@ -68,7 +69,8 @@ def invoices(year=None):
     return render_template("invoices.html", **container)
 
 
-@app.route("/invoice/edit")
+@app_invoices.route("/invoice/edit")
+@login_required
 def invoice_edit():
     try:
         container = Container()
@@ -132,6 +134,7 @@ def invoice_edit():
                     db.merge(item)
 
             else:
+                invoice.user_id = current_user.id
                 db.add(invoice)
 
                 for item in invoice_items:
@@ -143,7 +146,7 @@ def invoice_edit():
         return str(e)
 
 
-@app.route("/invoice/display/<id>")
+@app_invoices.route("/invoice/display/<id>")
 def invoice_display(id=None):
     try:
         with DbConnection() as db:
@@ -167,7 +170,7 @@ def invoice_display(id=None):
         return str(e)
 
 
-@app.route("/invoice/download/<id>")
+@app_invoices.route("/invoice/download/<id>")
 def invoice_download(id=None):
     try:
         with DbConnection() as db:

@@ -21,14 +21,12 @@ def upgrade():
     op.create_table(
         "user",
         sa.Column("id", sa.Integer(), nullable=False),
-        sa.Column("account", sa.VARCHAR(), nullable=False),
         sa.Column("name", sa.VARCHAR(), nullable=True),
         sa.Column("email", sa.VARCHAR(), nullable=True),
+        sa.Column("password", sa.VARCHAR(), nullable=True),
         sa.Column("user_role", sa.VARCHAR(), nullable=True),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("account"),
         sa.UniqueConstraint("email"),
-        sa.UniqueConstraint("name"),
     )
     with op.batch_alter_table("agencys", schema=None) as batch_op:
         batch_op.add_column(sa.Column("user_id", sa.Integer(), nullable=True))

@@ -1,31 +1,34 @@
 import logging
 
 from database import Agencys, DbConnection
-from flask import render_template, request
-from server import app
+from flask import Blueprint, render_template, request
+from flask_login import current_user, login_required
 
-from .authentification import Container
+from .helper import Container
 
 log = logging.getLogger(__name__)
 
+setup_agencys = Blueprint("agencys", __name__)
 
 # =========================================
 # Agency Related Functions
 # =========================================
 
 
-@app.route("/agencys")
+@setup_agencys.route("/agencys")
+@login_required
 def agencys():
     container = Container()
     with DbConnection() as db:
 
         container.agencys = db.query(
-            "agencys", filters={"user_id": container.current_user.id}, order_by="name"
+            "agencys", filters={"user_id": current_user.id}, order_by="name"
         )
     return render_template("agencys.html", **container)
 
 
-@app.route("/agencys/edit", methods=["POST"])
+@setup_agencys.route("/agencys/edit", methods=["POST"])
+@login_required
 def agency_edit():
     try:
         with DbConnection() as db:
@@ -46,6 +49,7 @@ def agency_edit():
             # Create or Update the agency
             agency.name = form_data.get("name")
             agency.percentage = form_data.get("percentage")
+            agency.user_id = current_user.id
 
             if agency.id:
                 db.merge(agency)

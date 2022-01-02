@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from datetime import datetime
 
 import sqlalchemy
+from flask_login import UserMixin
 from sqlalchemy import (
     FLOAT,
     JSON,
@@ -342,16 +343,16 @@ class Version(Base):
 
 
 @models.register(editable=True)
-class User(Base):
+class User(UserMixin, Base):
     """User Related Data"""
 
     __tablename__ = "user"
 
     id = Column(Integer, primary_key=True)
 
-    account = Column(VARCHAR, unique=True, nullable=False)
-    name = Column(VARCHAR, unique=True)
+    name = Column(VARCHAR)
     email = Column(VARCHAR, unique=True)
+    password = Column(VARCHAR)
     user_role = Column(VARCHAR)
 
 
