@@ -2,8 +2,14 @@ import logging
 import os
 import secrets
 import globconf
+from os import environ, path
+from dotenv import load_dotenv
 
 log = logging.getLogger(__name__)
+
+
+basedir = path.abspath(path.dirname(__file__))
+load_dotenv(path.join(basedir, ".env"))
 
 
 def root_dir(*names):
@@ -64,3 +70,58 @@ def write_config(path):
 
 appconfig = AppConfig()
 appconfig.init_defaults()
+
+
+class Config:
+    """Base config."""
+
+    SECRET_KEY = environ.get("SECRET_KEY")
+    SESSION_COOKIE_NAME = environ.get("SESSION_COOKIE_NAME", "session")
+    STATIC_FOLDER = os.path.join(basedir, "static")
+    TEMPLATES_FOLDER = os.path.join(basedir, "views")
+    LOCAL_DB = True
+    DB_MIGRATION = root_dir("src", "db_migration")
+    SERVER_PORT = 8080
+
+
+class ProdConfig(Config):
+    """Production config"""
+
+    FLASK_ENV = "production"
+    DEBUG = False
+    TESTING = False
+    DATABASE_URI = environ.get("PROD_DATABASE_URI")
+    LOCAL_DB = True
+    DB_MIGRATION = root_dir("src", "db_migration")
+    DB_PATH = root_dir("db")
+    DB_NAME = "invoice_database"
+
+
+class DevConfig(Config):
+    """Development config"""
+
+    FLASK_ENV = "development"
+    DEBUG = True
+    ECHO = True
+    TESTING = True
+    TEMPLATES_AUTO_RELOAD = True
+    DATABASE_URI = environ.get("DEV_DATABASE_URI")
+    LOCAL_DB = True
+    DB_MIGRATION = root_dir("src", "db_migration")
+    DB_PATH = root_dir("db")
+    DB_NAME = "invoice_database"
+
+
+class TestConfig(Config):
+    """Test config"""
+
+    FLASK_ENV = "development"
+    DEBUG = True
+    ECHO = True
+    TESTING = True
+    TEMPLATES_AUTO_RELOAD = False
+    DATABASE_URI = environ.get("DEV_DATABASE_URI")
+    LOCAL_DB = True
+    DB_MIGRATION = root_dir("src", "db_migration")
+    DB_PATH = root_dir("db")
+    DB_NAME = "test_db"

@@ -1,5 +1,6 @@
 flask
 flask-login
+python-dotenv
 gunicorn
 SQLAlchemy
 alembic

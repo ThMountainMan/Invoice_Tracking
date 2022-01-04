@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from datetime import datetime
 
 import sqlalchemy
+from flask import current_app
 from flask_login import UserMixin
 from sqlalchemy import (
     FLOAT,
@@ -46,7 +47,9 @@ def init(config=appconfig, create=False):
 
     if appconfig.debug:
         log.info("enable sql echo logging (debug)")
-    url = f"sqlite:///{config.db_path}/{config.db_name}.db"
+    url = (
+        f"sqlite:///{current_app.config['DB_PATH']}/{current_app.config['DB_NAME']}.db"
+    )
 
     # Run the DB Migration if needed
     migration.run_migrations(script_location=appconfig.db_migration, dsn=url)

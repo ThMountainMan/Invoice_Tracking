@@ -23,27 +23,31 @@ log = logging.getLogger()
 # site.addsitedir(os.path.abspath(os.path.join(THISDIR, "..", ".debug")))
 
 
-def main(config_file=DEFAULT_CFG):
+def main(config_file=DEFAULT_CFG, enviroment="dev"):
 
-    if not os.path.exists(config_file):
-        log.warning("Create default config file: %s", config_file)
-        write_config(config_file)
-        # sys.exit(f"Config file {config_file} created!")
+    # if not os.path.exists(config_file):
+    #     log.warning("Create default config file: %s", config_file)
+    #     write_config(config_file)
+    #     # sys.exit(f"Config file {config_file} created!")
 
-    log.info("Read config file: %s", config_file)
-    read_config(config_file)
+    # log.info("Read config file: %s", config_file)
+    # read_config(config_file)
 
     import database
     import server
 
-    database.init()
+    app = server.create_app(enviroment)
+    if enviroment == "test":
+        return app
 
     # Init the Logger Functionality
     init_logger()
-
+    # Init the DB
+    log.info("init database...")
+    with app.app_context():
+        database.init()
     log.info("starting server...")
-
-    return server.run()
+    return server.run(app=app)
 
 
 def init_logger():

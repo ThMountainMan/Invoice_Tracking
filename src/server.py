@@ -4,7 +4,7 @@ a threaded (non blocking) execution
 """
 from gevent import monkey
 
-monkey.patch_all()
+# monkey.patch_all()
 
 import logging
 import os
@@ -16,7 +16,7 @@ from gevent.pywsgi import WSGIServer
 
 import api
 from api.errors import errors
-from config import appconfig
+from config import appconfig, ProdConfig, DevConfig, TestConfig
 from database import DbConnection, User
 
 TEMPLATE_FOLDER = os.path.join(dirname(__file__), "views")
@@ -25,10 +25,24 @@ STATIC_FOLDER = os.path.join(dirname(__file__), "static")
 log = logging.getLogger(__name__)
 
 
-def create_app():
+def create_app(enviroment="dev"):
     app = Flask(__name__, template_folder=TEMPLATE_FOLDER, static_folder=STATIC_FOLDER)
 
-    app.config["SECRET_KEY"] = appconfig.secret_key
+    if enviroment == "prd":
+        app.config.from_object(ProdConfig)
+    elif enviroment == "dev":
+        app.config.from_object(DevConfig)
+    elif enviroment == "test":
+        app.config.from_object(TestConfig)
+    else:
+        log.error("No Valid enviroment Selected!!!")
+
+    # Overwrite the appconfig values for the DB Connection in order to init the DB properly
+    appconfig.db_migration = app.config["DB_MIGRATION"]
+    appconfig.db_path = app.config["DB_PATH"]
+    appconfig.db_name = app.config["DB_NAME"]
+
+    # app.config["SECRET_KEY"] = appconfig.secret_key
 
     # blueprint for error handling
     app.register_blueprint(errors)
@@ -55,15 +69,15 @@ def create_app():
 # app = create_app()
 
 
-def run():
-    app = create_app()
-    if appconfig.debug:
+def run(app):
+    # app = create_app()
+    if app.config["DEBUG"]:
         app.run(
-            host=appconfig.web_host,
-            port=appconfig.web_port,
-            debug=True,
+            host="0.0.0.0",
+            port=app.config["SERVER_PORT"],
+            debug=app.config["DEBUG"],
             use_reloader=False,
         )
     else:
-        http_server = WSGIServer((appconfig.web_host, appconfig.web_port), app)
+        http_server = WSGIServer(("0.0.0.0", app.config["SERVER_PORT"]), app)
         http_server.serve_forever()
