@@ -2,8 +2,10 @@ from database import DbConnection, NotExists, User
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_user, logout_user, login_required
 from werkzeug.security import check_password_hash, generate_password_hash
+import logging
 
 auth = Blueprint("auth", __name__)
+log = logging.getLogger(__name__)
 
 
 @auth.route("/login")
@@ -25,12 +27,16 @@ def login_post():
             flash("Please check your login details and try again.")
             return redirect(url_for("auth.login"))
     login_user(user, remember=remember)
-    # return redirect(url_for("invoices.invoices"))
-    return redirect(request.args.get("next"))
+
+    if request.args.get("next"):
+        return redirect(request.args.get("next"))
+    return redirect(url_for("invoices.invoices"))
+    # return redirect(request.args.get("next"))
 
 
 @auth.route("/signup")
 def signup():
+
     return render_template("signup.html")
 
 
@@ -41,6 +47,7 @@ def signup_post():
     password = request.form.get("password")
 
     with DbConnection() as db:
+
         user = db.query("user", filters={"email": email})
         user = user[0] if user else None
         if user:

@@ -6,7 +6,7 @@ import pytest
 sys.path.append("./")
 sys.path.append("./src")
 
-from src import start, database
+from src import start
 
 # read in SQL for populating test data
 with open(os.path.join(os.path.dirname(__file__), "test_data.sql"), "rb") as f:
@@ -24,6 +24,8 @@ def app():
     app.config["DB_PATH"] = db_path
     # create the database and load test data
     with app.app_context():
+        import database
+
         database.init()
         # get_db().executescript(_data_sql)
 
@@ -34,6 +36,15 @@ def app():
 
     # close and remove the temporary database
     shutil.rmtree(db_path)
+
+
+@pytest.fixture
+def database(app):
+    """A test client for the app."""
+    with app.app_context():
+        import database
+
+    yield database.DbConnection
 
 
 @pytest.fixture
@@ -53,7 +64,9 @@ class AuthActions:
         self._client = client
 
     def login(self, email="test@super.de", password="password"):
-        return self._client.post("/login", data={"email": email, "password": password})
+
+        data = {"email": email, "password": password}
+        return self._client.post("/login", data=data)
 
     def logout(self):
         return self._client.get("/logout")
