@@ -125,3 +125,5 @@ class TestConfig(Config):
     DB_MIGRATION = root_dir("src", "db_migration")
     DB_PATH = root_dir("db")
     DB_NAME = "test_db"
+    SECRET_KEY = "1260891ab69ce60952cb9dedaca469b0"
+    SESSION_COOKIE_NAME = "session"
