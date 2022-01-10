@@ -74,7 +74,8 @@ class Python(object):
 
     def read(self, path):
         locals_ = {}
-        execfile(path, {}, locals_)
+        exec(open("./filename").read(), {}, locals_)
+        # execfile(path, {}, locals_)
         return locals_
 
 
