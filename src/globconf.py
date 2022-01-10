@@ -69,14 +69,14 @@ class Yaml(object):
             return yaml.dump(data, fp)
 
 
-#class Python(object):
-#    """Load Python file and give back the data as dict."""
+class Python(object):
+    """Load Python file and give back the data as dict."""
 
-def read(self, path):
-    locals_ = {}
-    exec(open("./filename").read(), {}, locals_)
-    # execfile(path, {}, locals_)
-    return locals_
+    def read(self, path):
+        locals_ = {}
+        exec(open("./filename").read(), {}, locals_)
+        # execfile(path, {}, locals_)
+        return locals_
 
 class Ini(object):
     """Load Ini file and give back the data as dict."""
