@@ -1,3 +1,5 @@
+[![Application Test](https://github.com/ThMountainMan/Invoice_Tracking/actions/workflows/python-app.yml/badge.svg?branch=master)](https://github.com/ThMountainMan/Invoice_Tracking/actions/workflows/python-app.yml)
+
 # Invoice Tracking Tool ( Python )
 
 This Invoice Tracking tool is a small webproject to help with invoices for small freelancing Jobs. This is by far not perfect but it works for my general needs. I will use this Tool to improve some of my prgramming skills regarding Webdesign / Github / Docker / Flask. Therefore the Project will probably change a lot based on my current interests and time to work on it. Feedback of any kind id is highly welcomed! 
