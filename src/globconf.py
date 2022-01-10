@@ -78,7 +78,6 @@ class Python(object):
         # execfile(path, {}, locals_)
         return locals_
 
-
 class Ini(object):
     """Load Ini file and give back the data as dict."""
 
