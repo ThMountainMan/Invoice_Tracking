@@ -137,7 +137,7 @@ class Guess(object):
     def __init__(self):
         """ """
         self.dispatch = {}
-        self.dispatch["*.py"] = Python()
+        #self.dispatch["*.py"] = Python()
         self.dispatch["*.json"] = Json()
         if yaml is not None:
             self.dispatch["*.yaml"] = Yaml()
