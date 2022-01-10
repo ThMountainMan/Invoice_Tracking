@@ -6,7 +6,8 @@ from contextlib import contextmanager
 from datetime import datetime
 
 import sqlalchemy
-from sqlalchemy.engine import Engine
+from flask import current_app
+from flask_login import UserMixin
 from sqlalchemy import (
     FLOAT,
     JSON,
@@ -14,17 +15,19 @@ from sqlalchemy import (
     Column,
     Date,
     ForeignKey,
-    Integer,
-    create_engine,
-    extract,
-    desc,
-    UniqueConstraint,
     ForeignKeyConstraint,
+    Integer,
+    UniqueConstraint,
+    create_engine,
+    desc,
     event,
+    extract,
 )
-from sqlalchemy.orm.attributes import QueryableAttribute
+from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import relationship, sessionmaker
+from sqlalchemy.orm.attributes import QueryableAttribute
+from sqlalchemy.sql.sqltypes import String
 
 # from app_config import AppConfig
 from config import appconfig
@@ -44,7 +47,9 @@ def init(config=appconfig, create=False):
 
     if appconfig.debug:
         log.info("enable sql echo logging (debug)")
-    url = f"sqlite:///{config.db_path}\\{config.db_name}.db"
+    url = (
+        f"sqlite:///{current_app.config['DB_PATH']}/{current_app.config['DB_NAME']}.db"
+    )
 
     # Run the DB Migration if needed
     migration.run_migrations(script_location=appconfig.db_migration, dsn=url)
@@ -313,6 +318,11 @@ class BaseMixin(object):
 
     id = Column(Integer, primary_key=True)
 
+    # General User ID to seperate different User Content
+    @declared_attr
+    def user_id(cls):
+        return Column(Integer, ForeignKey("user.id"), nullable=False)
+
 
 # ===========
 # VERSION
@@ -328,6 +338,25 @@ class Version(Base):
     __tablename__ = "version"
     id = Column(Integer, primary_key=True)
     version = Column(Integer)
+
+
+# ===========
+# USER
+# ===========
+
+
+@models.register(editable=True)
+class User(UserMixin, Base):
+    """User Related Data"""
+
+    __tablename__ = "user"
+
+    id = Column(Integer, primary_key=True)
+
+    name = Column(VARCHAR)
+    email = Column(VARCHAR, unique=True)
+    password = Column(VARCHAR)
+    user_role = Column(VARCHAR)
 
 
 # ===========
@@ -358,6 +387,8 @@ class PersonalDetails(BaseMixin, Base):
         "PaymentDetails", foreign_keys=[payment_id], lazy=False
     )
 
+    user_id = Column(Integer, ForeignKey("user.id"))
+
     ForeignKeyConstraint(
         ["payment_id"], ["paymentdetails.id"], name="fk_personal_payment_id"
     )
@@ -374,8 +405,10 @@ class PaymentDetails(BaseMixin, Base):
     IBAN = Column(VARCHAR)
     BIC = Column(VARCHAR)
 
+    user_id = Column(Integer, ForeignKey("user.id"))
+
     def __str__(self):
-        return str(self.label.decode("utf-8"))
+        return str(self.label)
 
 
 # ===========
@@ -391,6 +424,8 @@ class Expenses(BaseMixin, Base):
     date = Column(Date)
     cost = Column(FLOAT)
     comment = Column(VARCHAR)
+
+    user_id = Column(Integer, ForeignKey("user.id"))
 
     # explicit/composite unique constraint.  'name' is optional.
     UniqueConstraint(expense_id, name="uc_expenses_id")
@@ -445,6 +480,8 @@ class Invoices(BaseMixin, Base):
     jobcode_id = Column(Integer, ForeignKey("jobtypes.id", ondelete="RESTRICT"))
     agency_id = Column(Integer, ForeignKey("agencys.id", ondelete="RESTRICT"))
     personal_id = Column(Integer, ForeignKey("personaldetails.id", ondelete="RESTRICT"))
+
+    user_id = Column(Integer, ForeignKey("user.id"))
 
     items = relationship("Invoices_Item", lazy=False)
     customer = relationship("Customers", foreign_keys=[customer_id], lazy=False)
@@ -526,6 +563,8 @@ class Customers(BaseMixin, Base):
     postcode = Column(Integer)
     city = Column(VARCHAR)
     country = Column(VARCHAR)
+
+    user_id = Column(Integer, ForeignKey("user.id"))
 
 
 # ===========

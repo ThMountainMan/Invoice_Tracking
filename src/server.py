@@ -2,58 +2,82 @@
 Implementing the general bottle setup with the additional feature to support
 a threaded (non blocking) execution
 """
-
-import logging
-import threading
-
-import bottle
 from gevent import monkey
 
-from config import appconfig as AppConfig
+# monkey.patch_all()
 
-# Apply GEVENT patches to bottle server to enable asynchronous functionality
-monkey.patch_all()
+import logging
+import os
+from os.path import dirname
 
+from flask import Flask
+from flask_login import LoginManager
+from gevent.pywsgi import WSGIServer
+
+import api
+from api.errors import errors
+from config import appconfig, ProdConfig, DevConfig, TestConfig
+from database import DbConnection, User
+
+TEMPLATE_FOLDER = os.path.join(dirname(__file__), "views")
+STATIC_FOLDER = os.path.join(dirname(__file__), "static")
 
 log = logging.getLogger(__name__)
 
 
-class ServerThread(threading.Thread):
-    def __init__(self, server, **kwargs):
-        log.info("initalizing threaded server")
-        self.server = server
-        threading.Thread.__init__(self, **kwargs)
+def create_app(enviroment="dev"):
+    app = Flask(__name__, template_folder=TEMPLATE_FOLDER, static_folder=STATIC_FOLDER)
 
-    def stop(self, wait=True, timeout=None):
-        log.info("shutdown threaded server")
-        self.server.srv.close()
-        if wait:
-            self.join(timeout=timeout)
-
-
-# @bottle.error(500)
-def _error_handler_500(error):
-    """Log internal errors and call the default handler."""
-    log.error("http error 500:\n%s\n%s", error.exception, error.traceback)
-    return bottle.app.default.default_error_handler(error)
-
-
-def _run(**kwargs):
-    bottle.run(**kwargs)
-
-
-def run(blocking=True):
-    server = bottle.GeventServer(host=AppConfig.web_host, port=AppConfig.web_port)
-    kwargs = {
-        "server": server,
-        "quiet": AppConfig.debug,
-        "debug": AppConfig.debug,
-    }
-    if blocking:
-        log.info("start blocking http server")
-        _run(**kwargs)
+    if enviroment == "prd":
+        app.config.from_object(ProdConfig)
+    elif enviroment == "dev":
+        app.config.from_object(DevConfig)
+    elif enviroment == "test":
+        app.config.from_object(TestConfig)
     else:
-        log.info("start non-blocking http server")
-        thread = ServerThread(server, target=_run, kwargs=kwargs)
-        thread.start()
-        return thread
+        log.error("No Valid enviroment Selected!!!")
+
+    # Overwrite the appconfig values for the DB Connection in order to init the DB properly
+    appconfig.db_migration = app.config["DB_MIGRATION"]
+    appconfig.db_path = app.config["DB_PATH"]
+    appconfig.db_name = app.config["DB_NAME"]
+
+    # app.config["SECRET_KEY"] = appconfig.secret_key
+
+    # blueprint for error handling
+    app.register_blueprint(errors)
+
+    app = api.register_app_routes(app)
+
+    login_manager = LoginManager()
+    login_manager.login_view = "auth.login"
+    login_manager.init_app(app)
+
+    if appconfig.debug:
+        app.jinja_env.auto_reload = True
+        app.config["TEMPLATES_AUTO_RELOAD"] = True
+
+    @login_manager.user_loader
+    def load_user(user_id):
+        with DbConnection() as db:
+            user = db.get("user", user_id)
+            return user
+
+    return app
+
+
+# app = create_app()
+
+
+def run(app):
+    # app = create_app()
+    if app.config["DEBUG"]:
+        app.run(
+            host="0.0.0.0",
+            port=app.config["SERVER_PORT"],
+            debug=app.config["DEBUG"],
+            use_reloader=False,
+        )
+    else:
+        http_server = WSGIServer(("0.0.0.0", app.config["SERVER_PORT"]), app)
+        http_server.serve_forever()

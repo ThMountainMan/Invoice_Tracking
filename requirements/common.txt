@@ -1,0 +1,10 @@
+flask
+flask-login
+python-dotenv
+gunicorn
+SQLAlchemy
+alembic
+gevent
+pdfkit
+PyYAML
+python-dateutil

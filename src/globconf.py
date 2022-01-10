@@ -9,12 +9,11 @@ to provide global configuration for everyone
 
 """
 
-from pprint import pformat
-from fnmatch import fnmatch
-from ast import literal_eval
-
-from configparser import ConfigParser
 import json
+from ast import literal_eval
+from configparser import ConfigParser
+from fnmatch import fnmatch
+from pprint import pformat
 
 try:
     import yaml
