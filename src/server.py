@@ -13,11 +13,16 @@ from os.path import dirname
 from flask import Flask
 from flask_login import LoginManager
 from gevent.pywsgi import WSGIServer
+from gevent import monkey
 
 import api
 from api.errors import errors
 from config import appconfig, ProdConfig, DevConfig, TestConfig
 from database import DbConnection, User
+
+# Apply GEVENT patches to bottle server to enable asynchronous functionality
+monkey.patch_all()
+
 
 TEMPLATE_FOLDER = os.path.join(dirname(__file__), "views")
 STATIC_FOLDER = os.path.join(dirname(__file__), "static")
@@ -75,7 +80,7 @@ def run(app):
         app.run(
             host="0.0.0.0",
             port=app.config["SERVER_PORT"],
-            debug=app.config["DEBUG"],
+            debug=True,
             use_reloader=False,
         )
     else:
