@@ -137,7 +137,7 @@
 											{% for item in items%}
 
 											<tr>
-												<td><strong>{{loop.index + 1}}</strong></td>
+												<td><strong>{{loop.index}}</strong></td>
 												<td>{{item.description}}</td>
 												<td class="text-center">{{item.count}}</td>
 												<td class="text-center">{{"{:.2f}".format(item.cost)}} €</td>

@@ -134,7 +134,7 @@
 									</button>
 								</div>
 								<div class="modal-body">
-									<form method="post" action="/invoice/edit" id="form_{{ invoice.id }}">
+									<form method="post" id="form_{{ invoice.id }}">
 										<input type="hidden" name="id" value="{{ invoice.id }}" />
 
 										<div class="form-group required">
@@ -229,10 +229,7 @@
 
 													<div class="col-12">
 														<b><label class="control-label">Description:</label></b>
-														<textarea class="form-control w-100" name="description" rows=" 3" required>
-                                                        {{ item.description }}
-                                                            </textarea
-														>
+														<textarea class="form-control w-100" name="description" rows=" 3" required>{{ item.description.rstrip()}}</textarea>
 													</div>
 												</div>
 												<br />
@@ -386,33 +383,15 @@
 										</div>
 									</div>
 									<br />
-
-									<div id="newItem" class="row" hidden>
-										<div class="col-6">
-											<b><label class="control-label">Item Count:</label></b>
-											<input type="number" class="form-control w-100" name="count" onkeypress="return event.charCode >= 48" min="1" required />
-										</div>
-										<div class="col-6">
-											<b><label class="control-label">cost:</label></b>
-											<div class="input-group-prepend">
-												<input type="number" class="form-control w-100" name="cost" required />
-												<span class="input-group-text" id="basic-addon1">€</span>
-											</div>
-										</div>
-
-										<div class="col-12">
-											<b><label class="control-label">Description:</label></b>
-											<textarea class="form-control w-100" name="description" rows=" 3" required></textarea>
-										</div>
-									</div>
 								</div>
-								<div id="moreitemlist" class="moreitemlist"></div>
 							</div>
 
+							{#
 							<div id="newRow">
 								<button id="additem" type="button" class="btn btn-info">Additional Item</button>
 								<button disabled id="removeitem" type="button" class="btn btn-danger">Remove</button>
 							</div>
+							#}
 							<br />
 
 							<div class="modal-footer">
@@ -469,34 +448,32 @@
 			window.location.reload();
 		});
 
-		$(document).ready(function () {
-			$("#additem").click(function () {
-				var num = $(".itemlist").length;
-				var newNum = new Number(num + 1);
+		$("#additem").click(function () {
+			var num = $(".itemlist").length;
+			var newNum = new Number(num + 1);
 
-				var newSection = $("#itemlist" + num)
-					.clone()
-					.attr("id", "itemlist" + newNum);
+			var newSection = $("#itemlist" + num)
+				.clone()
+				.attr("id", "itemlist" + newNum);
 
-				// // Add the clone to the section
-				$(".itemlist").last().append(newSection);
-				// // Enable the Disable button
-				$("#removeitem").prop("disabled", false);
+			// // Add the clone to the section
+			$(".itemlist").last().append(newSection);
+			// // Enable the Disable button
+			$("#removeitem").prop("disabled", false);
 
-				// // If there are more then X items, do not allow the creation of more
-				if (newNum == 5) $("#additem").attr("disabled", "disabled");
-			});
+			// // If there are more then X items, do not allow the creation of more
+			if (newNum == 5) $("#additem").attr("disabled", "disabled");
+		});
 
-			$("#removeitem").click(function () {
-				var num = $(".itemlist").length; // how many "duplicatable" input fields we currently have
-				$("#itemlist" + num).remove(); // remove the last element
+		$("#removeitem").click(function () {
+			var num = $(".itemlist").length; // how many "duplicatable" input fields we currently have
+			$("#itemlist" + num).remove(); // remove the last element
 
-				// enable the "add" button
-				$("#additem").prop("disabled", false);
+			// enable the "add" button
+			$("#additem").prop("disabled", false);
 
-				// if only one element remains, disable the "remove" button
-				if (num - 1 == 1) $("#removeitem").prop("disabled", true);
-			});
+			// if only one element remains, disable the "remove" button
+			if (num - 1 == 1) $("#removeitem").prop("disabled", true);
 		});
 
 		function check_payment(event) {
@@ -522,6 +499,7 @@
 				type: "post",
 				data: "&action=pay" + "&id=" + id + "&paydate=" + date,
 				success: function () {
+					alert("hallo");
 					window.location.reload();
 				},
 			});
