@@ -11,7 +11,7 @@ from flask_login import UserMixin
 from sqlalchemy import (
     FLOAT,
     JSON,
-    VARCHAR,
+    String,
     Column,
     Date,
     ForeignKey,
@@ -27,7 +27,8 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import relationship, sessionmaker
 from sqlalchemy.orm.attributes import QueryableAttribute
-from sqlalchemy.sql.sqltypes import String
+
+# from sqlalchemy.sql.sqltypes import String
 
 # from app_config import AppConfig
 from config import appconfig
@@ -47,9 +48,7 @@ def init(config=appconfig, create=False):
 
     if appconfig.debug:
         log.info("enable sql echo logging (debug)")
-    url = (
-        f"sqlite:///{current_app.config['DB_PATH']}/{current_app.config['DB_NAME']}.db"
-    )
+    url = f"sqlite:///{current_app.config['DB_PATH']}/{current_app.config['DB_NAME']}.db?charset=utf8"  # ?check_same_thread=False"
 
     # Run the DB Migration if needed
     migration.run_migrations(script_location=appconfig.db_migration, dsn=url)
@@ -353,10 +352,10 @@ class User(UserMixin, Base):
 
     id = Column(Integer, primary_key=True)
 
-    name = Column(VARCHAR)
-    email = Column(VARCHAR, unique=True)
-    password = Column(VARCHAR)
-    user_role = Column(VARCHAR)
+    name = Column(String)
+    email = Column(String, unique=True)
+    password = Column(String)
+    user_role = Column(String)
 
 
 # ===========
@@ -368,19 +367,19 @@ class User(UserMixin, Base):
 class PersonalDetails(BaseMixin, Base):
     """DB Interaction for personal Details"""
 
-    label = Column(VARCHAR)
+    label = Column(String)
 
-    name_company = Column(VARCHAR)
-    name = Column(VARCHAR)
+    name_company = Column(String)
+    name = Column(String)
 
-    street = Column(VARCHAR)
+    street = Column(String)
     postcode = Column(Integer)
-    city = Column(VARCHAR)
+    city = Column(String)
 
-    mail = Column(VARCHAR)
-    phone = Column(VARCHAR)
+    mail = Column(String)
+    phone = Column(String)
 
-    taxnumber = Column(VARCHAR)
+    taxnumber = Column(String)
 
     payment_id = Column(Integer, ForeignKey("paymentdetails.id", ondelete="RESTRICT"))
     payment_details = relationship(
@@ -398,12 +397,12 @@ class PersonalDetails(BaseMixin, Base):
 class PaymentDetails(BaseMixin, Base):
     """DB Interaction for payment Details"""
 
-    label = Column(VARCHAR)
+    label = Column(String)
 
-    name = Column(VARCHAR)
-    bank = Column(VARCHAR)
-    IBAN = Column(VARCHAR)
-    BIC = Column(VARCHAR)
+    name = Column(String)
+    bank = Column(String)
+    IBAN = Column(String)
+    BIC = Column(String)
 
     user_id = Column(Integer, ForeignKey("user.id"))
 
@@ -420,10 +419,10 @@ class PaymentDetails(BaseMixin, Base):
 class Expenses(BaseMixin, Base):
     """DB Interaction class for Expenses"""
 
-    expense_id = Column(VARCHAR, unique=True)
+    expense_id = Column(String, unique=True)
     date = Column(Date)
     cost = Column(FLOAT)
-    comment = Column(VARCHAR)
+    comment = Column(String)
 
     user_id = Column(Integer, ForeignKey("user.id"))
 
@@ -456,21 +455,21 @@ class Expenses(BaseMixin, Base):
 class Invoices_Item(BaseMixin, Base):
     """DB Interaction class for Invoices Items"""
 
-    description = Column(VARCHAR)
+    description = Column(String)
     count = Column(FLOAT)
     cost = Column(FLOAT)
 
     parent_id = Column(Integer, ForeignKey("invoices.id"))
-    parent = relationship("Invoices", foreign_keys=[parent_id])
+    # parent = relationship("Invoices", foreign_keys=[parent_id])
 
 
 @models.register(editable=True)
 class Invoices(BaseMixin, Base):
     """DB Interaction class for Invoices"""
 
-    invoice_id = Column(VARCHAR, unique=True)
+    invoice_id = Column(String, unique=True)
     date = Column(Date)
-    description = Column(VARCHAR)
+    description = Column(String)
     invoice_ammount = Column(FLOAT)
     invoice_mwst = Column(FLOAT)
     paydate = Column(Date)
@@ -488,16 +487,6 @@ class Invoices(BaseMixin, Base):
     jobtype = relationship("Jobtypes", foreign_keys=[jobcode_id], lazy=False)
     agency = relationship("Agencys", foreign_keys=[agency_id], lazy=False)
     personal = relationship("PersonalDetails", foreign_keys=[personal_id], lazy=False)
-
-    ForeignKeyConstraint(
-        ["customer_id"], ["customers.id"], name="fk_invoice_customer_id"
-    )
-    ForeignKeyConstraint(["jobcode_id"], ["jobtypes.id"], name="fk_invoice_jobcode_id")
-    ForeignKeyConstraint(["agency_id"], ["agencys.id"], name="fk_invoice_agency_id")
-
-    ForeignKeyConstraint(
-        ["personal_id"], ["personaldetails.id"], name="fk_invoice_personal_id"
-    )
 
     # explicit/composite unique constraint.  'name' is optional.
     UniqueConstraint(invoice_id, name="uc_invoices_id")
@@ -555,14 +544,14 @@ class Invoices(BaseMixin, Base):
 class Customers(BaseMixin, Base):
     """DB Interaction class for Customers"""
 
-    name = Column(VARCHAR)
-    email = Column(VARCHAR)
-    phone = Column(VARCHAR)
-    contact = Column(VARCHAR)
-    street = Column(VARCHAR)
+    name = Column(String)
+    email = Column(String)
+    phone = Column(String)
+    contact = Column(String)
+    street = Column(String)
     postcode = Column(Integer)
-    city = Column(VARCHAR)
-    country = Column(VARCHAR)
+    city = Column(String)
+    country = Column(String)
 
     user_id = Column(Integer, ForeignKey("user.id"))
 
@@ -576,7 +565,7 @@ class Customers(BaseMixin, Base):
 class Agencys(BaseMixin, Base):
     """DB Interaction class for Agencys"""
 
-    name = Column(VARCHAR)
+    name = Column(String)
     percentage = Column(FLOAT)
 
 
@@ -589,7 +578,7 @@ class Agencys(BaseMixin, Base):
 class Jobtypes(BaseMixin, Base):
     """DB Interaction class for Jobtypes"""
 
-    name = Column(VARCHAR)
+    name = Column(String)
 
 
 # Create the Database based on the definition available in the File
