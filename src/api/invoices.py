@@ -69,7 +69,7 @@ def invoices(year=None):
     return render_template("invoices.html", **container)
 
 
-@app_invoices.route("/invoice/edit")
+@app_invoices.route("/invoice/edit", methods=["POST"])
 @login_required
 def invoice_edit():
     try:
@@ -96,6 +96,7 @@ def invoice_edit():
                 return {"success": True}
             # Collect the Form Data
             form_data = request.form
+
             # Create or Update the Jobtypes
             invoice.invoice_id = (
                 invoice.generate_id() if not id else form_data.get("invoice_id")
@@ -105,15 +106,22 @@ def invoice_edit():
 
             invoice.customer_id = form_data.get("customer_id")
             invoice.jobcode_id = form_data.get("jobcode_id")
-            invoice.agency_id = form_data.get("agency_id")
+            invoice.agency_id = (
+                form_data.get("agency_id")
+                if form_data.get("agency_id") != "None"
+                else None
+            )
             invoice.personal_id = form_data.get("personal_id")
 
-            # Creat a joint list of the invoice items
-            _itemID = request.form.getall("item_id")
-            _count = request.form.getall("count")
-            _cost = request.form.getall("cost")
-            _description = request.form.getall("description")
-            _items = map(list, zip(_itemID, _count, _cost, _description))
+            # Creat a   joint list of the invoice items
+            _itemID = request.form.get("item_id")
+            _count = request.form.get("count", type=float)
+            _cost = request.form.get("cost", type=float)
+            _description = request.form.get("description", type=str)
+
+            __list = [_itemID, _count, _cost, _description]
+            # _items = map(list, zip(_itemID, _count, _cost, _description))
+            _items = [__list]
 
             invoice_items = []
             for item in _items:
@@ -185,7 +193,7 @@ def invoice_download(id=None):
             html_data = render_template("templates/Invoice_V1.html", **container)
             File, Path = export.export_to_pdf(html_data, container.invoice)
             # return send_file(File, root=Path, download=File)
-            return send_file(os.path.join(Path, File), as_attachment=True)
+            return send_file(os.path.join("..", Path, File), as_attachment=True)
 
     except Exception as e:
         # response.status = 400
