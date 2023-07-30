@@ -52,6 +52,7 @@ def customer_edit():
             customer.street = form_data.get("street")
             customer.city = form_data.get("city")
             customer.country = form_data.get("country")
+            customer.postcode = form_data.get("postcode")
             customer.user_id = current_user.id
 
             if customer.id:
