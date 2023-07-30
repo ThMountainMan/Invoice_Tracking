@@ -7,7 +7,7 @@ from dateutil import parser
 from flask import Blueprint, abort, redirect, render_template, request, send_file
 from flask.wrappers import Response
 from flask_login import current_user, login_required
-
+from datetime import datetime
 
 from .helper import Container
 
@@ -20,7 +20,8 @@ app_invoices = Blueprint("invoices", __name__)
 # =========================================
 
 
-@app_invoices.route("/")
+@app_invoices.route("/", defaults={"year": datetime.now().year})
+@app_invoices.route("/<year>")
 @login_required
 def invoices(year=None):
     container = Container()
@@ -65,6 +66,7 @@ def invoices(year=None):
         container.outstanding = round(outstanding, 2)
         container.expenses = round(sum_expenses, 2)
         container.profit = round(income - sum_expenses, 2)
+        container.year = year
 
     return render_template("invoices.html", **container)
 
